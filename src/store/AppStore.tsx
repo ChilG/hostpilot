@@ -5,13 +5,11 @@ import {
   demoGroups,
   demoProfiles,
   demoPorts,
-  demoProjects,
   demoBackups,
   type HostEntry,
   type HostGroup,
   type HostProfile,
   type PortRule,
-  type Project,
   type Backup,
 } from "@/data/demo";
 
@@ -24,7 +22,7 @@ const LOCAL_STORAGE_KEY = "hostpilot_config";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
-export type { HostEntry, HostGroup, HostProfile, PortRule, Project, Backup };
+export type { HostEntry, HostGroup, HostProfile, PortRule, Backup };
 
 type AppStore = {
   // Loading state
@@ -35,7 +33,6 @@ type AppStore = {
   groups: HostGroup[];
   profiles: HostProfile[];
   ports: PortRule[];
-  projects: Project[];
   backups: Backup[];
   onboarded: boolean;
   setOnboardedComplete: () => void;
@@ -63,14 +60,6 @@ type AppStore = {
   deletePort: (id: string) => void;
   checkPortLive: (id: string, host: string, port: number) => Promise<boolean>;
 
-  // Projects CRUD
-  addProject: (p: Omit<Project, "id" | "lastActivatedAt">) => void;
-  updateProject: (id: string, patch: Partial<Project>) => void;
-  deleteProject: (id: string) => void;
-  activateProject: (id: string) => Promise<void>;
-  selectProjectFolder: () => Promise<string | null>;
-  readProjectHostsFile: (path: string) => Promise<string>;
-
   // Backups
   addBackup: (reason: string) => Promise<Backup>;
   deleteBackup: (id: string) => void;
@@ -83,23 +72,6 @@ let _counter = 1000;
 const uid = () => `id_${++_counter}_${Math.random().toString(36).substr(2, 9)}`;
 const now = () => new Date().toISOString();
 
-const parseHostsText = (text: string): { domain: string; ip: string; enabled: boolean }[] => {
-  const lines = text.split("\n");
-  const results: { domain: string; ip: string; enabled: boolean }[] = [];
-  for (let line of lines) {
-    line = line.trim();
-    if (!line || line.startsWith("#")) continue;
-    const parts = line.split(/\s+/);
-    if (parts.length >= 2) {
-      const ip = parts[0];
-      const domain = parts[1];
-      if (ip && domain) {
-        results.push({ ip, domain, enabled: true });
-      }
-    }
-  }
-  return results;
-};
 
 // ─── Context ────────────────────────────────────────────────────────────────
 
@@ -111,7 +83,6 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   const [groups, setGroups] = useState<HostGroup[]>([]);
   const [profiles, setProfiles] = useState<HostProfile[]>([]);
   const [ports, setPorts] = useState<PortRule[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
   const [backups, setBackups] = useState<Backup[]>([]);
   const [onboarded, setOnboarded] = useState(false);
 
@@ -127,7 +98,6 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
           setGroups(config.groups || []);
           setProfiles(config.profiles || []);
           setPorts(config.ports || []);
-          setProjects(config.projects || []);
           setBackups(config.backups || []);
           setOnboarded(config.onboarded || false);
         } else {
@@ -139,7 +109,6 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
             setGroups(config.groups || []);
             setProfiles(config.profiles || []);
             setPorts(config.ports || []);
-            setProjects(config.projects || []);
             setBackups(config.backups || []);
             setOnboarded(config.onboarded || false);
           } else {
@@ -148,7 +117,6 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
             setGroups(demoGroups);
             setProfiles(demoProfiles);
             setPorts(demoPorts);
-            setProjects(demoProjects);
             setBackups(demoBackups);
             setOnboarded(false);
           }
@@ -168,7 +136,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     if (loading) return;
 
     async function saveStore() {
-      const config = { hosts, groups, profiles, ports, projects, backups, onboarded };
+      const config = { hosts, groups, profiles, ports, backups, onboarded };
       try {
         if (isTauri) {
           await invoke("save_app_config", { config });
@@ -180,7 +148,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       }
     }
     saveStore();
-  }, [hosts, groups, profiles, ports, projects, backups, onboarded, loading]);
+  }, [hosts, groups, profiles, ports, backups, onboarded, loading]);
 
   // ── Hosts ──
   const addHost = (h: Omit<HostEntry, "id" | "createdAt" | "updatedAt">) =>
@@ -292,111 +260,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     return isOpen;
   };
 
-  // ── Projects ──
-  const addProject = (p: Omit<Project, "id" | "lastActivatedAt">) =>
-    setProjects((prev) => [
-      ...prev,
-      { ...p, id: uid(), lastActivatedAt: now() },
-    ]);
 
-  const updateProject = (id: string, patch: Partial<Project>) =>
-    setProjects((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, ...patch } : p))
-    );
-
-  const deleteProject = (id: string) =>
-    setProjects((prev) => prev.filter((p) => p.id !== id));
-
-  const activateProject = async (id: string): Promise<void> => {
-    if (id === "__none__") {
-      const activeProj = projects.find((p) => p.active);
-      if (activeProj) {
-        if (isTauri) {
-          try {
-            await invoke("backup_hosts_file", {
-              reason: `Auto-backup before deactivating project: ${activeProj.name}`,
-            });
-            await invoke("remove_hosts_block", {
-              blockName: `Project: ${activeProj.name}`,
-            });
-          } catch (e) {
-            console.error("Failed to remove hosts block:", e);
-            throw e;
-          }
-        }
-      }
-      setProjects((prev) =>
-        prev.map((p) => ({
-          ...p,
-          active: false,
-        }))
-      );
-      return;
-    }
-
-    const targetProj = projects.find((p) => p.id === id);
-    if (!targetProj) return;
-
-    let rawContent = "";
-    try {
-      rawContent = await readProjectHostsFile(targetProj.path);
-    } catch (e) {
-      console.error("Failed to read project hosts file:", e);
-      throw e;
-    }
-
-    const parsed = parseHostsText(rawContent);
-    const hostEntries: HostEntry[] = parsed.map((h, i) => ({
-      id: `proj_entry_${i}_${Math.random().toString(36).substr(2, 9)}`,
-      domain: h.domain,
-      ip: h.ip,
-      enabled: h.enabled,
-      source: "project-file",
-      createdAt: now(),
-      updatedAt: now(),
-    }));
-
-    if (isTauri) {
-      try {
-        await invoke("backup_hosts_file", {
-          reason: `Auto-backup before activating project: ${targetProj.name}`,
-        });
-        await invoke("write_hosts_block", {
-          blockName: `Project: ${targetProj.name}`,
-          entries: hostEntries,
-        });
-      } catch (e) {
-        console.error("Failed to write project block:", e);
-        throw e;
-      }
-    }
-
-    setProjects((prev) =>
-      prev.map((p) => ({
-        ...p,
-        active: p.id === id,
-        lastActivatedAt: p.id === id ? now() : p.lastActivatedAt,
-        entryCount: p.id === id ? hostEntries.length : p.entryCount,
-      }))
-    );
-  };
-
-  const readProjectHostsFile = async (path: string): Promise<string> => {
-    if (isTauri) {
-      return await invoke<string>("read_project_hosts_file", { path });
-    } else {
-      return `# Project: Local Demo\n127.0.0.1   web.local\n127.0.0.1   api.local\n127.0.0.1   admin.local\n127.0.0.1   auth.local`;
-    }
-  };
-
-  const selectProjectFolder = async (): Promise<string | null> => {
-    if (isTauri) {
-      return await invoke<string | null>("select_project_folder");
-    } else {
-      // Browser mock path picker
-      return `~/projects/imported-project-${Math.floor(Math.random() * 100)}/.hostpilot`;
-    }
-  };
 
   // ── Backups ──
   const addBackup = async (reason: string): Promise<Backup> => {
@@ -442,7 +306,6 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         groups,
         profiles,
         ports,
-        projects,
         backups,
         onboarded,
         setOnboardedComplete,
@@ -461,12 +324,6 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         updatePort,
         deletePort,
         checkPortLive,
-        addProject,
-        updateProject,
-        deleteProject,
-        activateProject,
-        selectProjectFolder,
-        readProjectHostsFile,
         addBackup,
         deleteBackup,
         restoreBackup,

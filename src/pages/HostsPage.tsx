@@ -22,7 +22,6 @@ import { Plus, Search, Pencil, Trash2, Filter, Globe } from "lucide-react";
 const sourceColors: Record<HostEntry["source"], string> = {
   manual: "bg-slate-500/15 text-slate-400",
   imported: "bg-violet-500/15 text-violet-400",
-  "project-file": "bg-sky-500/15 text-sky-400",
 };
 
 export function HostsPage() {

@@ -264,55 +264,6 @@ pub fn restore_backup(
     copy_file_elevated(&backup_path, dest_hosts)
 }
 
-/// Helper to expand tilde (~) in paths to the user's home directory
-pub fn expand_tilde(path: &str) -> PathBuf {
-    if path.starts_with('~') {
-        let home = std::env::var("HOME")
-            .or_else(|_| std::env::var("USERPROFILE"))
-            .unwrap_or_default();
-        if !home.is_empty() {
-            let mut resolved = PathBuf::from(home);
-            if path.len() > 1 {
-                // If it is just ~ or starts with ~/ or ~\
-                let suffix = if path.starts_with("~/") || path.starts_with("~\\") {
-                    &path[2..]
-                } else {
-                    &path[1..]
-                };
-                resolved.push(suffix);
-            }
-            return resolved;
-        }
-    }
-    PathBuf::from(path)
-}
-
-/// Reads the project's hosts.local file given its directory or file path
-pub fn read_project_hosts_file(path: &str) -> Result<String, String> {
-    let resolved_path = expand_tilde(path);
-    let target_path = if resolved_path.is_dir() {
-        let dot_hosts = resolved_path.join(".hostpilot").join("hosts.local");
-        let direct_hosts = resolved_path.join("hosts.local");
-        if dot_hosts.exists() {
-            dot_hosts
-        } else {
-            direct_hosts
-        }
-    } else {
-        resolved_path
-    };
-
-    if !target_path.exists() {
-        return Err(format!(
-            "hosts.local file not found at path: {}",
-            target_path.to_string_lossy()
-        ));
-    }
-
-    fs::read_to_string(&target_path)
-        .map_err(|e| format!("Failed to read project hosts file: {}", e))
-}
-
 pub mod tests {
     #[test]
     fn test_replace_managed_block() {
@@ -322,13 +273,5 @@ pub mod tests {
         assert!(result.contains("new.local"));
         assert!(!result.contains("test.local"));
         assert!(result.contains("127.0.0.1 localhost"));
-    }
-
-    #[test]
-    fn test_expand_tilde() {
-        let expanded = super::expand_tilde("~/projects/test");
-        assert!(expanded.to_string_lossy().contains("projects"));
-        assert!(expanded.to_string_lossy().contains("test"));
-        assert!(!expanded.to_string_lossy().starts_with("~"));
     }
 }

@@ -5,7 +5,7 @@ import { HostsPage } from "@/pages/HostsPage";
 import { GroupsPage } from "@/pages/GroupsPage";
 import { ProfilesPage } from "@/pages/ProfilesPage";
 import { PortsPage } from "@/pages/PortsPage";
-import { ProjectsPage } from "@/pages/ProjectsPage";
+
 import { ImportExportPage } from "@/pages/ImportExportPage";
 import { BackupsPage } from "@/pages/BackupsPage";
 import { SettingsPage } from "@/pages/SettingsPage";
@@ -20,7 +20,7 @@ const pageMap: Record<Page, React.ComponentType> = {
   groups: GroupsPage,
   profiles: ProfilesPage,
   ports: PortsPage,
-  projects: ProjectsPage,
+
   "import-export": ImportExportPage,
   backups: BackupsPage,
   settings: SettingsPage,

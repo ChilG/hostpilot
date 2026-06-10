@@ -1,4 +1,5 @@
 mod config;
+mod db;
 mod hosts;
 mod ports;
 
@@ -77,18 +78,7 @@ fn check_port(host: String, port: u16) -> bool {
     ports::is_port_open(&host, port)
 }
 
-#[tauri::command]
-fn select_project_folder() -> Option<String> {
-    rfd::FileDialog::new()
-        .set_title("Select Project Folder")
-        .pick_folder()
-        .map(|path| path.to_string_lossy().to_string())
-}
 
-#[tauri::command]
-fn read_project_hosts_file(path: String) -> Result<String, String> {
-    hosts::read_project_hosts_file(&path)
-}
 
 #[tauri::command]
 fn save_config_file(content: String, default_name: String) -> Result<Option<String>, String> {
@@ -155,8 +145,6 @@ pub fn run() {
             load_app_config,
             save_app_config,
             check_port,
-            select_project_folder,
-            read_project_hosts_file,
             save_config_file,
             reveal_in_finder,
             open_in_browser,

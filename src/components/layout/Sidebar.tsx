@@ -5,7 +5,6 @@ import {
   Layers,
   BookMarked,
   Plug,
-  FolderOpen,
   ArrowLeftRight,
   ShieldCheck,
   Settings,
@@ -24,7 +23,7 @@ export type Page =
   | "groups"
   | "profiles"
   | "ports"
-  | "projects"
+
   | "import-export"
   | "backups"
   | "settings";
@@ -35,7 +34,7 @@ const navItems: { page: Page; label: string; icon: React.ElementType }[] = [
   { page: "groups", label: "Groups", icon: Layers },
   { page: "profiles", label: "Profiles", icon: BookMarked },
   { page: "ports", label: "Ports", icon: Plug },
-  { page: "projects", label: "Projects", icon: FolderOpen },
+
   { page: "import-export", label: "Import / Export", icon: ArrowLeftRight },
   { page: "backups", label: "Backups", icon: ShieldCheck },
   { page: "settings", label: "Settings", icon: Settings },

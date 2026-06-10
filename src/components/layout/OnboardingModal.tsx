@@ -9,7 +9,7 @@ import {
   Anchor,
   ShieldCheck,
   KeyRound,
-  FolderCode,
+  Globe,
   ChevronLeft,
   ChevronRight,
   Copy,
@@ -62,7 +62,7 @@ export function OnboardingModal({ open, onOpenChange }: Props) {
             {slide === 0 && <Anchor className="w-9 h-9 text-white animate-pulse" strokeWidth={2.5} />}
             {slide === 1 && <ShieldCheck className="w-9 h-9 text-white" strokeWidth={2} />}
             {slide === 2 && <KeyRound className="w-9 h-9 text-white" strokeWidth={2} />}
-            {slide === 3 && <FolderCode className="w-9 h-9 text-white" strokeWidth={2} />}
+            {slide === 3 && <Globe className="w-9 h-9 text-white animate-pulse" strokeWidth={2} />}
           </div>
         </div>
 
@@ -117,7 +117,7 @@ export function OnboardingModal({ open, onOpenChange }: Props) {
             <div className="space-y-3 text-center">
               <h2 className="text-xl font-bold tracking-tight">You're Ready to Fly!</h2>
               <p className="text-xs text-muted-foreground leading-5">
-                Create a <code className="font-mono bg-muted/40 px-1 py-0.5 rounded text-[10px]">.hostpilot/hosts.local</code> file in your projects and import the folder to manage domain mappings directly in your workspaces.
+                Get started by adding your first hosts or mapping configurations, and group them into custom profiles to swap local setups instantly.
               </p>
             </div>
           )}

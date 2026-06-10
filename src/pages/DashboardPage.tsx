@@ -18,13 +18,11 @@ import { useAppStore, isTauri } from "@/store/AppStore";
 import {
   Globe,
   BookMarked,
-  FolderOpen,
   ShieldCheck,
   Zap,
   Clock,
   CheckCircle2,
   Circle,
-  ExternalLink,
   Plug,
 } from "lucide-react";
 
@@ -33,10 +31,8 @@ export function DashboardPage() {
     hosts,
     profiles,
     ports,
-    projects,
     backups,
     activateProfile,
-    activateProject,
     addBackup,
     restoreBackup,
   } = useAppStore();
@@ -46,7 +42,6 @@ export function DashboardPage() {
   const [diff, setDiff] = useState<string>("");
 
   const activeProfile = profiles.find((p) => p.active) || profiles[0] || { name: "None", id: "", entryIds: [] };
-  const activeProject = projects.find((p) => p.active) || projects[0] || { name: "None", id: "" };
   const enabledHosts = hosts.filter((h) => h.enabled);
   const lastBackup = backups[0];
   const runningPorts = ports.filter((p) => p.status === "running");
@@ -145,10 +140,7 @@ export function DashboardPage() {
     toast.success(`Profile "${name}" activated`);
   };
 
-  const handleActivateProject = (projectId: string, name: string) => {
-    activateProject(projectId);
-    toast.success(`Switched project to "${name}"`);
-  };
+
 
   return (
     <div className="flex flex-col h-full">
@@ -169,17 +161,11 @@ export function DashboardPage() {
       />
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         {/* Status cards */}
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <StatusCard
             icon={<BookMarked className="w-4 h-4 text-indigo-400" />}
             label="Active Profile"
             value={activeProfile.name}
-            badge={<Badge className="bg-emerald-500/15 text-emerald-400 border-0 text-[10px] px-1.5 py-0.5">Active</Badge>}
-          />
-          <StatusCard
-            icon={<FolderOpen className="w-4 h-4 text-violet-400" />}
-            label="Active Project"
-            value={activeProject.name}
             badge={<Badge className="bg-emerald-500/15 text-emerald-400 border-0 text-[10px] px-1.5 py-0.5">Active</Badge>}
           />
           <StatusCard
@@ -297,24 +283,7 @@ export function DashboardPage() {
               </Button>
             </div>
 
-            {/* Recent Projects */}
-            <div className="rounded-xl border border-border bg-card p-5 space-y-2">
-              <span className="text-sm font-medium">Recent Projects</span>
-              {projects.map((proj) => (
-                <button
-                  key={proj.id}
-                  onClick={() => handleActivateProject(proj.id, proj.name)}
-                  className="w-full flex items-center justify-between px-3 py-2 rounded-md hover:bg-accent/60 transition-colors group"
-                >
-                  <div className="flex items-center gap-2">
-                    {proj.active && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
-                    {!proj.active && <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30" />}
-                    <span className="text-xs font-medium">{proj.name}</span>
-                  </div>
-                  <ExternalLink className="w-3 h-3 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
-                </button>
-              ))}
-            </div>
+
           </div>
         </div>
 

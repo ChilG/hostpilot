@@ -7,7 +7,7 @@ export type HostEntry = {
   enabled: boolean;
   groupId?: string;
   description?: string;
-  source: "manual" | "imported" | "project-file";
+  source: "manual" | "imported";
   createdAt: string;
   updatedAt: string;
 };
