@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { invoke } from "@tauri-apps/api/core";
 import { Topbar } from "@/components/layout/Topbar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,7 @@ const statusConfig: Record<PortRule["status"], { label: string; className: strin
 };
 
 export function PortsPage() {
-  const { ports, updatePort, deletePort } = useAppStore();
+  const { ports, updatePort, deletePort, checkPortLive } = useAppStore();
 
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
@@ -33,6 +34,17 @@ export function PortsPage() {
   const [deleteTarget, setDeleteTarget] = useState<PortRule | undefined>();
 
   const running = ports.filter((p) => p.status === "running").length;
+
+  // Auto-scan ports on page load
+  useEffect(() => {
+    if (ports.length > 0) {
+      ports.forEach((p) => {
+        if (p.enabled) {
+          checkPortLive(p.id, p.targetHost, p.port);
+        }
+      });
+    }
+  }, []);
 
   const openCreate = () => {
     setFormMode("create");
@@ -53,14 +65,35 @@ export function PortsPage() {
     setDeleteTarget(undefined);
   };
 
-  const handleOpen = (port: PortRule) => {
+  const handleOpen = async (port: PortRule) => {
     const url = `${port.protocol}://${port.targetHost}:${port.port}`;
     toast.info(`Opening ${url}`, { description: `→ ${port.domain}` });
-    // In real app: open(url)
+    try {
+      await invoke("open_in_browser", { url });
+    } catch (e) {
+      console.error("Failed to open browser URL:", e);
+    }
   };
 
-  const checkAll = () => {
-    toast.success("Port check simulated", { description: `${running} services running` });
+  const checkAll = async () => {
+    const enabledPorts = ports.filter((p) => p.enabled);
+    if (enabledPorts.length === 0) {
+      toast.info("No active port rules to check");
+      return;
+    }
+    
+    toast.promise(
+      Promise.all(enabledPorts.map((p) => checkPortLive(p.id, p.targetHost, p.port))),
+      {
+        loading: "Scanning port services...",
+        success: () => {
+          // Recalculate running count
+          const live = ports.filter((p) => p.status === "running").length;
+          return `Scan complete: ${live} services running`;
+        },
+        error: "Port scan failed",
+      }
+    );
   };
 
   return (
@@ -118,6 +151,10 @@ export function PortsPage() {
                   onCheckedChange={() => {
                     updatePort(port.id, { enabled: !port.enabled });
                     toast.success(`Port rule ${!port.enabled ? "enabled" : "disabled"}`);
+                    if (!port.enabled) {
+                      // Check status immediately when enabled
+                      checkPortLive(port.id, port.targetHost, port.port);
+                    }
                   }}
                   className="scale-90"
                 />
@@ -146,6 +183,7 @@ export function PortsPage() {
                     variant="outline"
                     size="sm"
                     className="h-7 text-xs gap-1 text-indigo-400 border-indigo-400/30 hover:bg-indigo-500/10"
+                    disabled={!port.enabled}
                     onClick={() => handleOpen(port)}
                   >
                     <ExternalLink className="w-3 h-3" />
@@ -202,8 +240,8 @@ export function PortsPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              variant="destructive"
               onClick={handleDelete}
+              className="bg-red-600 hover:bg-red-700 text-white"
             >
               Delete
             </AlertDialogAction>

@@ -35,3 +35,6 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
+
+# App Config files
+.hostpilot/

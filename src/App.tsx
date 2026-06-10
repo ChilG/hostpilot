@@ -9,9 +9,10 @@ import { ProjectsPage } from "@/pages/ProjectsPage";
 import { ImportExportPage } from "@/pages/ImportExportPage";
 import { BackupsPage } from "@/pages/BackupsPage";
 import { SettingsPage } from "@/pages/SettingsPage";
-import { AppStoreProvider } from "@/store/AppStore";
+import { AppStoreProvider, useAppStore } from "@/store/AppStore";
 import { Toaster } from "@/components/ui/sonner";
 import { invoke } from "@tauri-apps/api/core";
+import { OnboardingModal } from "@/components/layout/OnboardingModal";
 
 const pageMap: Record<Page, React.ComponentType> = {
   dashboard: DashboardPage,
@@ -25,10 +26,31 @@ const pageMap: Record<Page, React.ComponentType> = {
   settings: SettingsPage,
 };
 
-function App() {
+function AppContent() {
   const [page, setPage] = useState<Page>("dashboard");
+  const { loading, onboarded } = useAppStore();
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+
+  useEffect(() => {
+    if (!loading && !onboarded) {
+      setOnboardingOpen(true);
+    }
+  }, [loading, onboarded]);
+
   const PageComponent = pageMap[page];
 
+  return (
+    <div className="flex h-screen bg-background text-foreground overflow-hidden dark">
+      <Sidebar activePage={page} onNavigate={setPage} />
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <PageComponent />
+      </main>
+      <OnboardingModal open={onboardingOpen} onOpenChange={setOnboardingOpen} />
+    </div>
+  );
+}
+
+function App() {
   useEffect(() => {
     const isTauri = typeof window !== "undefined" && (window as any).__TAURI_INTERNALS__ !== undefined;
     
@@ -46,12 +68,7 @@ function App() {
 
   return (
     <AppStoreProvider>
-      <div className="flex h-screen bg-background text-foreground overflow-hidden dark">
-        <Sidebar activePage={page} onNavigate={setPage} />
-        <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          <PageComponent />
-        </main>
-      </div>
+      <AppContent />
       <Toaster position="bottom-right" theme="dark" richColors />
     </AppStoreProvider>
   );

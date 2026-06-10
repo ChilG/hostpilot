@@ -13,12 +13,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useAppStore, type Backup } from "@/store/AppStore";
+import { useAppStore, type Backup, isTauri } from "@/store/AppStore";
 import { BackupCreateDialog } from "@/components/backups/BackupCreateDialog";
 import { ShieldCheck, RotateCcw, Trash2, Download, Plus, Clock } from "lucide-react";
 
 export function BackupsPage() {
-  const { backups, deleteBackup } = useAppStore();
+  const { backups, deleteBackup, restoreBackup } = useAppStore();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Backup | undefined>();
@@ -31,12 +31,21 @@ export function BackupsPage() {
     setDeleteTarget(undefined);
   };
 
-  const handleRestore = () => {
+  const handleRestore = async () => {
     if (!restoreTarget) return;
-    toast.success("Restore simulated", {
-      description: `Hosts file restored to backup from ${new Date(restoreTarget.createdAt).toLocaleString()}`,
-    });
-    setRestoreTarget(undefined);
+    try {
+      await restoreBackup(restoreTarget.id);
+      toast.success("Restore completed successfully!", {
+        description: `Hosts file restored to backup from ${new Date(restoreTarget.createdAt).toLocaleString()}`,
+      });
+    } catch (e) {
+      console.error("Failed to restore backup:", e);
+      toast.error("Restore failed", {
+        description: String(e),
+      });
+    } finally {
+      setRestoreTarget(undefined);
+    }
   };
 
   const handleDownload = (backup: Backup) => {
@@ -79,10 +88,8 @@ export function BackupsPage() {
           <div>
             <p className="text-sm font-medium text-violet-400">Auto Backup Strategy</p>
             <p className="text-xs text-muted-foreground mt-1">
-              hostpilot automatically creates a backup of{" "}
-              <code className="font-mono bg-muted px-1 py-0.5 rounded text-[10px]">/etc/hosts</code> before every write.
-              You can restore any backup at any time. Backups are stored locally in{" "}
-              <code className="font-mono bg-muted px-1 py-0.5 rounded text-[10px]">~/.hostpilot/backups/</code>.
+              hostpilot automatically creates a backup of your hosts file before every write.
+              You can restore any backup at any time. Backups are stored locally inside the application data folder.
             </p>
           </div>
         </div>
@@ -192,8 +199,8 @@ export function BackupsPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              variant="destructive"
               onClick={handleDelete}
+              className="bg-red-600 hover:bg-red-700 text-white"
             >
               Delete
             </AlertDialogAction>
@@ -207,8 +214,9 @@ export function BackupsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Restore backup?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will simulate restoring <code className="font-mono">/etc/hosts</code> to the state from{" "}
-              {restoreTarget && new Date(restoreTarget.createdAt).toLocaleString()}. In the real app, this would write to the system hosts file.
+              Are you sure you want to restore the system hosts file to the state from{" "}
+              {restoreTarget && new Date(restoreTarget.createdAt).toLocaleString()}? 
+              {isTauri && " You will be prompted by the system for administrator credentials to apply these changes."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

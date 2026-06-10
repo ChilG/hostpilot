@@ -58,7 +58,6 @@ This checklist tracks the implementation status of the **hostpilot** desktop UI 
 
 ### 📥 8. Config Imports & Exports
 - [x] **hostpilot.config.json Export**: Full JSON configuration serialization and browser-native file downloading.
-- [x] **hosts.local Export**: Dynamic generation of standard hosts blocks from enabled configurations.
 - [x] **Merge Configuration Import**: Interactive upload parsing and importing for full JSON config schema.
 
 ---
@@ -76,34 +75,44 @@ This checklist tracks the implementation status of the **hostpilot** desktop UI 
 To transition from the React-only mockup to a fully functional desktop application, we will implement the following Tauri commands and Rust integration tasks:
 
 ### 1. System Hosts File I/O & Safety (Rust Engine)
-- [ ] **Command: `read_hosts_file`**
+- [x] **Command: `read_hosts_file`**
   - Read system hosts file cross-platform.
-- [ ] **Command: `get_hosts_diff(block_name, entries)`**
+- [x] **Command: `get_hosts_diff(block_name, entries)`**
   - Compute a unified diff of changes before applying.
-- [ ] **Command: `write_hosts_block(block_name, entries)`** & **`remove_hosts_block(block_name)`**
+- [x] **Command: `write_hosts_block(block_name, entries)`** & **`remove_hosts_block(block_name)`**
   - Inject/remove named managed blocks (`# >>> HostPilot START: [name]`).
   - Write updated contents to a temp file, then copy to system path with elevation.
-- [ ] **Privilege Escalation Strategy**:
+- [x] **Privilege Escalation Strategy**:
   - macOS: `osascript` administrator privileges prompt.
   - Linux: `pkexec` graphical elevation.
   - Windows: UAC elevation via PowerShell `RunAs`.
 
 ### 2. Backup & Recovery Operations
-- [ ] **Command: `backup_hosts_file`**
+- [x] **Command: `backup_hosts_file`**
   - Copy hosts to `~/.hostpilot/backups/hosts-{timestamp}` prior to any updates.
-- [ ] **Command: `list_backups`**
+- [x] **Command: `list_backups`**
   - Read backups folder and return metadata (timestamp, reason, size).
-- [ ] **Command: `restore_backup(id)`**
+- [x] **Command: `restore_backup(id)`**
   - Restore a backup using the elevated temp-file copy method.
 
 ### 3. Local Configuration & Utilities
-- [ ] **Command: `load_app_config`** & **`save_app_config`**
+- [x] **Command: `load_app_config`** & **`save_app_config`**
   - Read/Write the core app configuration (`config.json`) in the platform App Data directory.
-- [ ] **Command: `check_port(host, port)`**
+- [x] **Command: `check_port(host, port)`**
   - Check TCP port availability using socket connection checks.
-- [ ] **Command: `select_project_folder`**
+- [x] **Command: `select_project_folder`**
   - Trigger folder selector dialog to import `.hostpilot/hosts.local` config.
-- [ ] **Command: `reveal_in_finder(path)`** & **`open_in_browser(url)`**
+- [x] **Command: `reveal_in_finder(path)`** & **`open_in_browser(url)`**
   - Utility commands to open links and show configuration folders.
 
+### 4. Welcome Onboarding Modal (Option A)
+- [x] **Onboarding state persistence**: Add `onboarded` flag to `AppConfig` and state store.
+- [x] **Multi-slide Welcome dialog component**: Implement step-by-step layout (`Welcome`, `Security`, `Permission Setup`, `Project Guide`).
+- [x] **Conditional render hook**: Render Onboarding Modal in `App.tsx` if `!onboarded`.
+- [x] **Bypass password script integration**: Provide copyable script for `chown` in Slide 3.
+
+### 5. Project hosts.local Disk Read & System Integration
+- [x] **Tauri Command: `read_project_hosts_file`**: Read project-specific `hosts.local` from local disk paths (supporting `~` home expansion in Rust).
+- [x] **Frontend AppStore Integration**: Connect project activation/deactivation to write/remove the parsed `hosts.local` entries in the system hosts file.
+- [x] **Projects Page UI Enhancements**: Load and preview actual `hosts.local` file contents dynamically, parse entry counts, and handle missing/error file states.
 

@@ -28,13 +28,66 @@ import {
 } from "lucide-react";
 
 export function ProjectsPage() {
-  const { projects, activateProject, deleteProject } = useAppStore();
+  const { projects, activateProject, deleteProject, readProjectHostsFile } = useAppStore();
 
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
   const [editTarget, setEditTarget] = useState<Project | undefined>();
   const [deleteTarget, setDeleteTarget] = useState<Project | undefined>();
   const [previewId, setPreviewId] = useState<string | null>(null);
+  const [projectFiles, setProjectFiles] = useState<Record<string, { content?: string; loading?: boolean; error?: string }>>({});
+
+  const loadProjectFile = async (project: Project) => {
+    if (projectFiles[project.id]?.loading) return;
+
+    setProjectFiles((prev) => ({
+      ...prev,
+      [project.id]: { ...prev[project.id], loading: true },
+    }));
+
+    try {
+      const content = await readProjectHostsFile(project.path);
+      setProjectFiles((prev) => ({
+        ...prev,
+        [project.id]: { content, loading: false },
+      }));
+    } catch (e) {
+      console.error(e);
+      setProjectFiles((prev) => ({
+        ...prev,
+        [project.id]: { error: String(e), loading: false },
+      }));
+    }
+  };
+
+  const loadProjectFileForce = async (project: Project) => {
+    setProjectFiles((prev) => ({
+      ...prev,
+      [project.id]: { loading: true },
+    }));
+
+    try {
+      const content = await readProjectHostsFile(project.path);
+      setProjectFiles((prev) => ({
+        ...prev,
+        [project.id]: { content, loading: false },
+      }));
+    } catch (e) {
+      console.error(e);
+      setProjectFiles((prev) => ({
+        ...prev,
+        [project.id]: { error: String(e), loading: false },
+      }));
+    }
+  };
+
+  // Auto load active projects
+  const [loadedKeys, setLoadedKeys] = useState<Record<string, boolean>>({});
+  const activeProj = projects.find((p) => p.active);
+  if (activeProj && !projectFiles[activeProj.id] && !loadedKeys[activeProj.id]) {
+    setLoadedKeys(prev => ({ ...prev, [activeProj.id]: true }));
+    loadProjectFile(activeProj);
+  }
 
   const openCreate = () => {
     setFormMode("create");
@@ -55,16 +108,29 @@ export function ProjectsPage() {
     setDeleteTarget(undefined);
   };
 
-  const handleActivate = (project: Project) => {
-    activateProject(project.id);
-    toast.success(`Project "${project.name}" activated`, {
-      description: "hosts.local applied to managed block",
-    });
+  const handleActivate = async (project: Project) => {
+    try {
+      await activateProject(project.id);
+      toast.success(`Project "${project.name}" activated`, {
+        description: "hosts.local applied to managed block",
+      });
+      loadProjectFileForce(project);
+    } catch (e) {
+      toast.error("Failed to activate project", {
+        description: String(e),
+      });
+    }
   };
 
-  const handleDeactivate = (project: Project) => {
-    activateProject("__none__"); // deactivate all
-    toast.success(`Project "${project.name}" deactivated`);
+  const handleDeactivate = async (project: Project) => {
+    try {
+      await activateProject("__none__");
+      toast.success(`Project "${project.name}" deactivated`);
+    } catch (e) {
+      toast.error("Failed to deactivate project", {
+        description: String(e),
+      });
+    }
   };
 
   return (
@@ -185,7 +251,11 @@ export function ProjectsPage() {
                         variant="outline"
                         size="sm"
                         className="h-8 text-xs gap-1.5"
-                        onClick={() => setPreviewId(previewId === project.id ? null : project.id)}
+                        onClick={() => {
+                          const isExpanding = previewId !== project.id;
+                          setPreviewId(isExpanding ? project.id : null);
+                          if (isExpanding) loadProjectFile(project);
+                        }}
                       >
                         Preview
                         <ChevronRight className={`w-3 h-3 transition-transform ${previewId === project.id ? "rotate-90" : ""}`} />
@@ -207,9 +277,15 @@ export function ProjectsPage() {
               {(project.active || previewId === project.id) && (
                 <div className="mt-4 rounded-lg bg-muted/40 p-3">
                   <p className="text-[10px] font-mono text-muted-foreground/60 mb-2">.hostpilot/hosts.local</p>
-                  <pre className="text-xs font-mono text-muted-foreground leading-5">
-                    {`# Project: ${project.name}\n127.0.0.1   web.local\n127.0.0.1   api.local\n127.0.0.1   admin.local\n127.0.0.1   auth.local`}
-                  </pre>
+                  {projectFiles[project.id]?.loading ? (
+                    <p className="text-xs font-mono text-muted-foreground/60">Loading file...</p>
+                  ) : projectFiles[project.id]?.error ? (
+                    <p className="text-xs font-mono text-red-400">Error: {projectFiles[project.id]?.error}</p>
+                  ) : (
+                    <pre className="text-xs font-mono text-muted-foreground leading-5 overflow-x-auto max-h-48">
+                      {projectFiles[project.id]?.content || "# Empty file"}
+                    </pre>
+                  )}
                 </div>
               )}
             </div>

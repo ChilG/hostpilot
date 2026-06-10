@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAppStore } from "@/store/AppStore";
 
+import { toast } from "sonner";
+
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -25,10 +27,16 @@ export function BackupCreateDialog({ open, onOpenChange, onSave }: Props) {
     if (open) setReason("");
   }, [open]);
 
-  const handleSave = () => {
-    addBackup(reason.trim() || "Manual backup");
-    onSave?.();
-    onOpenChange(false);
+  const handleSave = async () => {
+    try {
+      await addBackup(reason.trim() || "Manual backup");
+      onSave?.();
+      onOpenChange(false);
+    } catch (err) {
+      toast.error("Failed to create backup", {
+        description: String(err),
+      });
+    }
   };
 
   return (

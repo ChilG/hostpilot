@@ -13,6 +13,10 @@ import {
   Globe,
 } from "lucide-react";
 
+import { useState, useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import { isTauri } from "@/store/AppStore";
+
 interface SettingRowProps {
   label: string;
   description?: string;
@@ -52,6 +56,22 @@ function SettingsSection({ icon, title, children }: SettingsSectionProps) {
 }
 
 export function SettingsPage() {
+  const [hostsPath, setHostsPath] = useState("/etc/hosts");
+
+  useEffect(() => {
+    async function loadPaths() {
+      if (isTauri) {
+        try {
+          const path = await invoke<string>("get_default_hosts_path");
+          setHostsPath(path);
+        } catch (e) {
+          console.error("Failed to load default hosts path:", e);
+        }
+      }
+    }
+    loadPaths();
+  }, []);
+
   return (
     <div className="flex flex-col h-full">
       <Topbar title="Settings" subtitle="Configure hostpilot preferences" />
@@ -67,12 +87,10 @@ export function SettingsPage() {
           >
             <div className="flex items-center gap-2">
               <Input
-                defaultValue="/etc/hosts"
-                className="h-8 text-xs w-48 font-mono"
+                value={hostsPath}
+                readOnly
+                className="h-8 text-xs w-48 font-mono bg-muted/30"
               />
-              <Button variant="outline" size="sm" className="h-8 text-xs">
-                Browse
-              </Button>
             </div>
           </SettingRow>
           <SettingRow

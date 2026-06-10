@@ -619,3 +619,16 @@ To safely modify `/etc/hosts` or the Windows equivalent:
 ### 3. File System Dialogs
 Use Native Tauri/Rust open folder dialogs for importing `.hostpilot` project folders.
 
+### 4. Welcome Onboarding Modal (Option A)
+To assist users on their first launch, we will implement a multi-slide Onboarding Welcome Modal:
+- **Slide 1: Welcome to HostPilot**: Briefly introduce the app's purpose (local domain and port management).
+- **Slide 2: Security & Backups**: Highlight that HostPilot only modifies its clearly demarcated blocks in `/etc/hosts` and automatically creates backup snapshots.
+- **Slide 3: Privilege Elevation**: Explains Touch ID/password requests and provides copy-pasteable scripts (e.g. `sudo chown $(whoami) /etc/hosts`) to allow passwordless editing.
+- **Slide 4: Project Config**: Explains how to create and import `.hostpilot/hosts.local` files.
+- **State**: The `onboarded` flag is saved in the configuration to prevent the modal from re-triggering.
+
+### 5. Import/Export Simplification & Project Disk Read Integration (Approved 2026-06-11)
+To streamline configuration sharing and ensure robust desktop-native functionality:
+- **Import/Export Formats**: Simplified the Import/Export page to **exclusively support `hostpilot.config.json`** for importing/merging and exporting settings. Plain-text `hosts.local` file options on this page have been removed.
+- **Project hosts.local Disk Reader**: The Rust backend command `read_project_hosts_file` reads `.hostpilot/hosts.local` from local disk paths. Normalizes paths starting with `~` using home directory resolution.
+- **Project Activation & Write Block**: Activating a project reads the actual hosts.local file, parses its IP/domain entries, triggers a hosts file backup, and writes them directly to `/etc/hosts` in block scope `# >>> HostPilot START: Project: [Name]`. Deactivating a project cleanly removes the block.

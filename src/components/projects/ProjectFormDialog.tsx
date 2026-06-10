@@ -22,7 +22,7 @@ type Props = {
 const DEFAULT_FORM = { name: "", path: "", entryCount: 0, active: false };
 
 export function ProjectFormDialog({ open, onOpenChange, mode, project, onSave }: Props) {
-  const { addProject, updateProject } = useAppStore();
+  const { addProject, updateProject, selectProjectFolder } = useAppStore();
   const [form, setForm] = useState(DEFAULT_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -52,6 +52,36 @@ export function ProjectFormDialog({ open, onOpenChange, mode, project, onSave }:
     onOpenChange(false);
   };
 
+  const handleBrowse = async () => {
+    try {
+      const selected = await selectProjectFolder();
+      if (selected) {
+        setForm((f) => {
+          let suggestedName = f.name;
+          if (!suggestedName) {
+            // Guess project folder name from path
+            const parts = selected.split(/[/\\]/).filter(Boolean);
+            if (parts.length > 0) {
+              // If last part is ".hostpilot", use parent folder name
+              if (parts[parts.length - 1] === ".hostpilot" && parts.length > 1) {
+                suggestedName = parts[parts.length - 2];
+              } else {
+                suggestedName = parts[parts.length - 1];
+              }
+            }
+          }
+          return {
+            ...f,
+            path: selected,
+            name: suggestedName,
+          };
+        });
+      }
+    } catch (err) {
+      console.error("Folder pick error:", err);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-sm dark">
@@ -74,16 +104,21 @@ export function ProjectFormDialog({ open, onOpenChange, mode, project, onSave }:
 
           <div className="space-y-1.5">
             <Label htmlFor="proj-path">Path *</Label>
-            <Input
-              id="proj-path"
-              placeholder="~/projects/my-project/.hostpilot"
-              value={form.path}
-              onChange={(e) => setForm((f) => ({ ...f, path: e.target.value }))}
-              className={errors.path ? "border-red-500" : ""}
-            />
+            <div className="flex gap-2">
+              <Input
+                id="proj-path"
+                placeholder="/path/to/project/.hostpilot"
+                value={form.path}
+                onChange={(e) => setForm((f) => ({ ...f, path: e.target.value }))}
+                className={`flex-1 ${errors.path ? "border-red-500" : ""}`}
+              />
+              <Button type="button" variant="outline" size="sm" className="h-9 text-xs" onClick={handleBrowse}>
+                Browse
+              </Button>
+            </div>
             {errors.path && <p className="text-xs text-red-400">{errors.path}</p>}
             <p className="text-[10px] text-muted-foreground">
-              Folder containing <code className="font-mono">.hostpilot/hosts.local</code>
+              Folder containing <code className="font-mono">.hostpilot/hosts.local</code> or project config
             </p>
           </div>
         </div>

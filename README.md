@@ -27,7 +27,7 @@ hostpilot lets you manage `/etc/hosts` entries without ever touching the file di
 - **Profiles** — save and switch between environment configurations instantly
 - **Projects** — import `.hostpilot/hosts.local` from any project folder
 - **Port metadata** — track which local port each domain points to, check live status
-- **Import / Export** — share configs via `hosts.local` or `hostpilot.config.json`
+- **Import / Export** — share configurations via `hostpilot.config.json`
 - **Backups** — automatic snapshot before every write, one-click restore
 - **Safe writes** — only manages its own block, never overwrites user entries
 - **Diff preview** — review changes before applying to the system hosts file

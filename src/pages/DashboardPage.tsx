@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { invoke } from "@tauri-apps/api/core";
 import { Topbar } from "@/components/layout/Topbar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useAppStore } from "@/store/AppStore";
+import { useAppStore, isTauri } from "@/store/AppStore";
 import {
   Globe,
   BookMarked,
@@ -24,7 +25,6 @@ import {
   CheckCircle2,
   Circle,
   ExternalLink,
-  RefreshCw,
   Plug,
 } from "lucide-react";
 
@@ -38,31 +38,106 @@ export function DashboardPage() {
     activateProfile,
     activateProject,
     addBackup,
+    restoreBackup,
   } = useAppStore();
 
   const [quickApplyConfirmOpen, setQuickApplyConfirmOpen] = useState(false);
   const [restoreConfirmOpen, setRestoreConfirmOpen] = useState(false);
+  const [diff, setDiff] = useState<string>("");
 
-  const activeProfile = profiles.find((p) => p.active) || profiles[0] || { name: "None", id: "" };
+  const activeProfile = profiles.find((p) => p.active) || profiles[0] || { name: "None", id: "", entryIds: [] };
   const activeProject = projects.find((p) => p.active) || projects[0] || { name: "None", id: "" };
   const enabledHosts = hosts.filter((h) => h.enabled);
   const lastBackup = backups[0];
   const runningPorts = ports.filter((p) => p.status === "running");
 
-  const handleQuickApply = () => {
-    addBackup(`Auto-backup before quick apply (profile: ${activeProfile.name})`);
-    toast.success("Successfully applied to hosts file!", {
-      description: "Active profile hosts synced to /etc/hosts, and configuration backed up.",
-    });
-    setQuickApplyConfirmOpen(false);
+  // Load live hosts diff
+  useEffect(() => {
+    async function loadDiff() {
+      if (!activeProfile || !activeProfile.name || activeProfile.name === "None") {
+        setDiff("");
+        return;
+      }
+      try {
+        const profileEntries = hosts.filter((h) =>
+          activeProfile.entryIds?.includes(h.id)
+        );
+        if (isTauri) {
+          const result = await invoke<string>("get_hosts_diff", {
+            blockName: activeProfile.name,
+            entries: profileEntries,
+          });
+          setDiff(result);
+        } else {
+          // Browser mock diff
+          const mockLines = [
+            `  # System hosts file mock preview`,
+            `  127.0.0.1 localhost`,
+            `- # >>> HostPilot START: old-block`,
+            `- 127.0.0.1 old-domain.local`,
+            `- # <<< HostPilot END: old-block`,
+            `+ # >>> HostPilot START: ${activeProfile.name}`,
+            ...profileEntries
+              .filter((h) => h.enabled)
+              .map((h) => `+ 127.0.0.1   ${h.domain}`),
+            `+ # <<< HostPilot END: ${activeProfile.name}`,
+          ];
+          setDiff(mockLines.join("\n"));
+        }
+      } catch (err) {
+        console.error("Failed to load diff:", err);
+        setDiff(`Error loading hosts diff: ${err}`);
+      }
+    }
+    loadDiff();
+  }, [hosts, activeProfile]);
+
+  const handleQuickApply = async () => {
+    try {
+      // 1. Create backup first
+      await addBackup(`Auto-backup before quick apply (profile: ${activeProfile.name})`);
+
+      // 2. Filter entries associated with the active profile
+      const profileEntries = hosts.filter((h) =>
+        activeProfile.entryIds?.includes(h.id)
+      );
+
+      // 3. Write hosts block via Tauri command
+      if (isTauri) {
+        await invoke("write_hosts_block", {
+          blockName: activeProfile.name,
+          entries: profileEntries,
+        });
+      }
+
+      toast.success("Successfully applied to hosts file!", {
+        description: `Active profile "${activeProfile.name}" hosts synced, and hosts file backed up.`,
+      });
+    } catch (e) {
+      console.error("Failed to apply configuration:", e);
+      toast.error("Elevation or Apply failed", {
+        description: String(e),
+      });
+    } finally {
+      setQuickApplyConfirmOpen(false);
+    }
   };
 
-  const handleRestore = () => {
+  const handleRestore = async () => {
     if (!lastBackup) return;
-    toast.success("Restore simulated", {
-      description: `Hosts file restored to backup from ${new Date(lastBackup.createdAt).toLocaleString()}`,
-    });
-    setRestoreConfirmOpen(false);
+    try {
+      await restoreBackup(lastBackup.id);
+      toast.success("Restore completed successfully!", {
+        description: `Hosts file restored to backup from ${new Date(lastBackup.createdAt).toLocaleString()}`,
+      });
+    } catch (e) {
+      console.error("Failed to restore backup:", e);
+      toast.error("Failed to restore backup", {
+        description: String(e),
+      });
+    } finally {
+      setRestoreConfirmOpen(false);
+    }
   };
 
   const handleActivateProfile = (profileId: string, name: string) => {
@@ -85,6 +160,7 @@ export function DashboardPage() {
             size="sm"
             className="bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5 h-8 text-xs"
             onClick={() => setQuickApplyConfirmOpen(true)}
+            disabled={!activeProfile || activeProfile.name === "None"}
           >
             <Zap className="w-3.5 h-3.5" />
             Quick Apply
@@ -178,11 +254,9 @@ export function DashboardPage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">Path</span>
-                  <span className="font-mono text-foreground/80">/etc/hosts</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Managed blocks</span>
-                  <span className="font-medium text-foreground/80">1 block</span>
+                  <span className="font-mono text-foreground/80">
+                    {isTauri ? (navigator.userAgent.includes("Windows") ? "C:\\...\\etc\\hosts" : "/etc/hosts") : "/etc/hosts"}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">Status</span>
@@ -198,14 +272,11 @@ export function DashboardPage() {
                   <ShieldCheck className="w-4 h-4 text-violet-400" />
                   <span className="text-sm font-medium">Last Backup</span>
                 </div>
-                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground">
-                  <RefreshCw className="w-3 h-3" />
-                </Button>
               </div>
               <div className="space-y-2">
                 {lastBackup ? (
                   <>
-                    <p className="text-xs text-muted-foreground">{lastBackup.reason}</p>
+                    <p className="text-xs text-muted-foreground truncate">{lastBackup.reason}</p>
                     <p className="text-xs font-mono text-foreground/60">
                       {new Date(lastBackup.createdAt).toLocaleString()}
                     </p>
@@ -247,22 +318,34 @@ export function DashboardPage() {
           </div>
         </div>
 
-        {/* Diff Preview */}
+        {/* Live Diff Preview */}
         <div className="rounded-xl border border-border bg-card">
           <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-            <span className="text-sm font-medium">Managed Hosts Block Preview</span>
-            <Badge className="bg-emerald-500/15 text-emerald-400 border-0 text-[10px]">In sync</Badge>
+            <span className="text-sm font-medium">Hosts File Changes Preview (Diff)</span>
+            <Badge className="bg-emerald-500/15 text-emerald-400 border-0 text-[10px]">Live</Badge>
           </div>
           <div className="p-5">
-            <pre className="text-xs font-mono text-muted-foreground bg-muted/40 rounded-lg p-4 leading-6">
-              <span className="text-muted-foreground/50">{`# >>> HostPilot START: demo-local\n`}</span>
-              {enabledHosts.map((h) => (
-                <span key={h.id} className="text-emerald-400">
-                  {`127.0.0.1   ${h.domain}\n`}
-                </span>
-              ))}
-              <span className="text-muted-foreground/50">{`# <<< HostPilot END: demo-local`}</span>
-            </pre>
+            {diff ? (
+              <pre className="text-xs font-mono bg-muted/40 rounded-lg p-4 leading-6 max-h-[300px] overflow-y-auto whitespace-pre-wrap">
+                {diff.split("\n").map((line, idx) => {
+                  let color = "text-muted-foreground/60";
+                  if (line.startsWith("+")) {
+                    color = "text-emerald-400 bg-emerald-500/5";
+                  } else if (line.startsWith("-")) {
+                    color = "text-rose-400 bg-rose-500/5 font-medium";
+                  }
+                  return (
+                    <div key={idx} className={`${color} px-2 py-0.5 rounded-sm`}>
+                      {line}
+                    </div>
+                  );
+                })}
+              </pre>
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-4 bg-muted/20 rounded-lg">
+                No changes to display. Select a profile or enable hosts.
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -273,7 +356,9 @@ export function DashboardPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Apply active profile configuration?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will simulate writing the hosts configuration for the active profile "{activeProfile.name}" to your local hosts file (/etc/hosts). An automatic backup of your current setup will be generated.
+              This will write the hosts configuration for the active profile "{activeProfile.name}" to your local hosts file. 
+              {isTauri && " You will be prompted by the system for administrator permissions to apply changes."}
+              An automatic backup of your current setup will be generated before writing.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -291,7 +376,8 @@ export function DashboardPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Restore last backup?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to restore the system configuration from the backup created on {lastBackup ? new Date(lastBackup.createdAt).toLocaleString() : ""}? This will overwrite your current configuration.
+              Are you sure you want to restore the system configuration from the backup created on {lastBackup ? new Date(lastBackup.createdAt).toLocaleString() : ""}? 
+              This will overwrite your current configuration. You may be prompted for administrator credentials.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -332,4 +418,3 @@ function StatusCard({
     </div>
   );
 }
-
