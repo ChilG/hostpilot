@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sidebar, type Page } from "@/components/layout/Sidebar";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { HostsPage } from "@/pages/HostsPage";
@@ -11,6 +11,7 @@ import { BackupsPage } from "@/pages/BackupsPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { AppStoreProvider } from "@/store/AppStore";
 import { Toaster } from "@/components/ui/sonner";
+import { invoke } from "@tauri-apps/api/core";
 
 const pageMap: Record<Page, React.ComponentType> = {
   dashboard: DashboardPage,
@@ -27,6 +28,21 @@ const pageMap: Record<Page, React.ComponentType> = {
 function App() {
   const [page, setPage] = useState<Page>("dashboard");
   const PageComponent = pageMap[page];
+
+  useEffect(() => {
+    const isTauri = typeof window !== "undefined" && (window as any).__TAURI_INTERNALS__ !== undefined;
+    
+    if (isTauri) {
+      // Small delay of 1s to allow the premium splash screen animation to display beautifully
+      const timer = setTimeout(() => {
+        invoke("close_splashscreen").catch((err) => {
+          console.error("Failed to close splashscreen:", err);
+        });
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   return (
     <AppStoreProvider>

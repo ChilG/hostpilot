@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>hostpilot - Initializing</title>
+  <style>
+    /* Premium Modern Dark Aesthetic */
+    :root {
+      --background: #09090b;
+      --foreground: #f4f4f5;
+      --primary: #8b5cf6; /* Violet */
+      --secondary: #3b82f6; /* Blue */
+      --muted: #71717a;
+      --border: rgba(63, 63, 70, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background: linear-gradient(135deg, #0f0f13 0%, #09090b 100%);
+      color: var(--foreground);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      height: 100vh;
+      width: 100vw;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      box-shadow: inset 0 0 30px rgba(139, 92, 246, 0.03);
+    }
+
+    /* Container holding the logo, title, and progress bar */
+    .splash-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      width: 100%;
+      max-width: 380px;
+      padding: 32px;
+      animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* Logo Glowing container */
+    .logo-container {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-glow {
+      position: absolute;
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.4) 0%, rgba(59, 130, 246, 0) 70%);
+      filter: blur(10px);
+      animation: pulseGlow 2s ease-in-out infinite;
+    }
+
+    /* Animated SVG logo for hostpilot */
+    .logo-svg {
+      width: 72px;
+      height: 72px;
+      z-index: 2;
+      filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.5));
+      animation: floatLogo 3s ease-in-out infinite;
+    }
+
+    /* Typography */
+    .title {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.05em;
+      margin-bottom: 8px;
+      background: linear-gradient(to right, #ffffff, #a1a1aa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 400;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+    }
+
+    /* Progress bar styling */
+    .progress-container {
+      width: 100%;
+      height: 4px;
+      background: rgba(39, 39, 42, 0.6);
+      border-radius: 99px;
+      overflow: hidden;
+      position: relative;
+      margin-bottom: 12px;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      border-radius: 99px;
+      background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+      box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+      animation: fillProgress 1.1s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+    }
+
+    .status-text {
+      font-size: 11px;
+      color: var(--muted);
+      font-family: monospace;
+      animation: blinkText 1.5s step-start infinite;
+    }
+
+    /* Keyframes for animations */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: scale(0.96) translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 0.3;
+      }
+      50% {
+        transform: scale(1.3);
+        opacity: 0.6;
+      }
+    }
+
+    @keyframes floatLogo {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-4px);
+      }
+    }
+
+    @keyframes fillProgress {
+      0% {
+        width: 0%;
+      }
+      20% {
+        width: 10%;
+      }
+      40% {
+        width: 45%;
+      }
+      80% {
+        width: 90%;
+      }
+      100% {
+        width: 100%;
+      }
+    }
+
+    @keyframes blinkText {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+  </style>
+</head>
+<body>
+  <div class="splash-container">
+    <div class="logo-container">
+      <div class="logo-glow"></div>
+      <!-- SVG Compass + Plane shape indicating Pilot and Host control -->
+      <svg class="logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#a78bfa" /> <!-- Light Violet -->
+            <stop offset="50%" stop-color="#8b5cf6" /> <!-- Violet -->
+            <stop offset="100%" stop-color="#3b82f6" /> <!-- Blue -->
+          </linearGradient>
+        </defs>
+        <!-- Outer subtle circle -->
+        <circle cx="50" cy="50" r="45" fill="none" stroke="url(#logo-grad)" stroke-width="1.5" stroke-dasharray="4 6" opacity="0.6" />
+        
+        <!-- Inner compass markers -->
+        <circle cx="50" cy="50" r="38" fill="none" stroke="#3f3f46" stroke-width="1" opacity="0.4" />
+        
+        <!-- Stylized Airplane/Delta (representing Pilot) -->
+        <path d="M 50 20 L 78 78 L 50 63 L 22 78 Z" fill="url(#logo-grad)" />
+        
+        <!-- Center hub circle -->
+        <circle cx="50" cy="50" r="3" fill="#ffffff" />
+      </svg>
+    </div>
+
+    <h1 class="title">hostpilot</h1>
+    <p class="subtitle">Secure Host Controller</p>
+
+    <div class="progress-container">
+      <div class="progress-bar"></div>
+    </div>
+    <p class="status-text">initializing secure systems...</p>
+  </div>
+</body>
+</html>

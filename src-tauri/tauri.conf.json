@@ -12,13 +12,26 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "hostpilot",
         "width": 1100,
         "height": 720,
         "minWidth": 1100,
         "minHeight": 720,
         "titleBarStyle": "Overlay",
-        "hiddenTitle": true
+        "hiddenTitle": true,
+        "visible": false
+      },
+      {
+        "label": "splashscreen",
+        "title": "hostpilot",
+        "width": 500,
+        "height": 340,
+        "resizable": false,
+        "decorations": false,
+        "visible": true,
+        "center": true,
+        "url": "splash.html"
       }
     ],
     "security": {
