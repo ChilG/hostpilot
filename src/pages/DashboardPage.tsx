@@ -21,9 +21,8 @@ import {
   ShieldCheck,
   Zap,
   Clock,
-  CheckCircle2,
-  Circle,
   Plug,
+  ExternalLink,
 } from "lucide-react";
 
 export function DashboardPage() {
@@ -140,6 +139,20 @@ export function DashboardPage() {
     toast.success(`Profile "${name}" activated`);
   };
 
+  const handleOpenPort = async (port: any) => {
+    const url = `${port.protocol}://${port.targetHost}:${port.port}`;
+    toast.info(`Opening ${url}`, { description: `→ ${port.domain}` });
+    try {
+      if (isTauri) {
+        await invoke("open_in_browser", { url });
+      } else {
+        window.open(url, "_blank");
+      }
+    } catch (e) {
+      console.error("Failed to open browser URL:", e);
+    }
+  };
+
 
 
   return (
@@ -183,49 +196,65 @@ export function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-3 gap-6">
-          {/* Recent Profiles */}
+          {/* Recent Port Rules */}
           <div className="col-span-2 rounded-xl border border-border bg-card">
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Recent Profiles</span>
+                <Plug className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Recent Port Rules</span>
               </div>
-              <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground">
-                View all
-              </Button>
+              <Badge className="bg-amber-500/15 text-amber-400 border-0 text-[10px] px-1.5 py-0.5">
+                {runningPorts.length} Active
+              </Badge>
             </div>
             <div className="divide-y divide-border">
-              {profiles.map((profile) => (
-                <div key={profile.id} className="flex items-center justify-between px-5 py-3 hover:bg-accent/40 transition-colors group">
+              {ports.map((port) => (
+                <div
+                  key={port.id}
+                  onClick={() => handleOpenPort(port)}
+                  className="flex items-center justify-between px-5 py-3 hover:bg-accent/40 transition-colors group cursor-pointer"
+                >
                   <div className="flex items-center gap-3">
-                    {profile.active ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                    ) : (
-                      <Circle className="w-4 h-4 text-muted-foreground/40" />
-                    )}
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                      port.status === "running" ? "bg-emerald-500/10 text-emerald-400" : "bg-muted text-muted-foreground"
+                    }`}>
+                      <ExternalLink className="w-4 h-4" />
+                    </div>
                     <div>
-                      <p className="text-sm font-medium">{profile.name}</p>
-                      <p className="text-xs text-muted-foreground">{profile.description}</p>
+                      <p className="text-sm font-mono font-medium">{port.domain}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {port.protocol}://{port.targetHost}:{port.port}
+                      </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {!profile.active && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-7 text-xs gap-1"
-                        onClick={() => handleActivateProfile(profile.id, profile.name)}
-                      >
-                        <Zap className="w-3 h-3" />
-                        Activate
-                      </Button>
-                    )}
-                    {profile.active && (
-                      <Badge className="bg-emerald-500/15 text-emerald-400 border-0 text-[10px]">Active</Badge>
-                    )}
+                  <div className="flex items-center gap-3">
+                    <Badge
+                      className={`border-0 text-[10px] ${
+                        port.status === "running"
+                          ? "bg-emerald-500/15 text-emerald-400"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {port.status === "running" ? "Running" : "Stopped"}
+                    </Badge>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs opacity-0 group-hover:opacity-100 transition-opacity gap-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenPort(port);
+                      }}
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      Open
+                    </Button>
                   </div>
                 </div>
               ))}
+              {ports.length === 0 && (
+                <p className="text-xs text-muted-foreground text-center py-6">No port rules configured</p>
+              )}
             </div>
           </div>
 
@@ -281,6 +310,47 @@ export function DashboardPage() {
               >
                 Restore
               </Button>
+            </div>
+
+            {/* Recent Profiles */}
+            <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-indigo-400" />
+                  <span className="text-sm font-medium">Recent Profiles</span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                {profiles.slice(0, 3).map((profile) => (
+                  <div
+                    key={profile.id}
+                    className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors text-xs"
+                  >
+                    <div className="truncate pr-2">
+                      <p className="font-medium truncate">{profile.name}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">{profile.description}</p>
+                    </div>
+                    <div className="flex-shrink-0">
+                      {profile.active ? (
+                        <Badge className="bg-emerald-500/15 text-emerald-400 border-0 text-[10px]">Active</Badge>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-6 text-[10px] gap-1 px-2 cursor-pointer"
+                          onClick={() => handleActivateProfile(profile.id, profile.name)}
+                        >
+                          <Zap className="w-2.5 h-2.5" />
+                          Activate
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {profiles.length === 0 && (
+                  <p className="text-xs text-muted-foreground text-center py-2">No profiles created</p>
+                )}
+              </div>
             </div>
 
 
