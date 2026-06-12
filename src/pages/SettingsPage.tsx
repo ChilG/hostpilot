@@ -13,9 +13,16 @@ import {
   Globe,
 } from "lucide-react";
 
-import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { isTauri } from "@/store/AppStore";
+import { useAppStore } from "@/store/AppStore";
+import { useTranslation } from "@/i18n/translations";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface SettingRowProps {
   label: string;
@@ -56,168 +63,249 @@ function SettingsSection({ icon, title, children }: SettingsSectionProps) {
 }
 
 export function SettingsPage() {
-  const [hostsPath, setHostsPath] = useState("/etc/hosts");
+  const { settings, updateSettings } = useAppStore();
+  const { t } = useTranslation();
 
-  useEffect(() => {
-    async function loadPaths() {
-      if (isTauri) {
-        try {
-          const path = await invoke<string>("get_default_hosts_path");
-          setHostsPath(path);
-        } catch (e) {
-          console.error("Failed to load default hosts path:", e);
-        }
+  const handleBrowseBackupDir = async () => {
+    try {
+      const selected = await invoke<string | null>("select_backup_directory");
+      if (selected) {
+        updateSettings({ backupDirectory: selected });
       }
+    } catch (e) {
+      console.error("Failed to select backup directory:", e);
     }
-    loadPaths();
-  }, []);
+  };
 
   return (
     <div className="flex flex-col h-full">
-      <Topbar title="Settings" subtitle="Configure hostpilot preferences" />
+      <Topbar title={t("settings")} subtitle={t("settingsSubtitle")} />
       <div className="flex-1 overflow-y-auto p-6 space-y-5">
         {/* Hosts File */}
         <SettingsSection
           icon={<Globe className="w-4 h-4 text-sky-400" />}
-          title="Hosts File"
+          title={t("hostsFileSettings")}
         >
           <SettingRow
-            label="Hosts file path"
-            description="System hosts file location"
+            label={t("hostsFilePath")}
+            description={t("hostsFilePathDesc")}
           >
             <div className="flex items-center gap-2">
               <Input
-                value={hostsPath}
+                value={settings.hostsPath}
                 readOnly
                 className="h-8 text-xs w-48 font-mono bg-muted/30"
               />
             </div>
           </SettingRow>
           <SettingRow
-            label="Preview before applying"
-            description="Show diff preview before writing to hosts file"
+            label={t("previewBeforeApply")}
+            description={t("previewBeforeApplyDesc")}
           >
-            <Switch defaultChecked />
+            <Switch
+              checked={settings.previewBeforeApply}
+              onCheckedChange={(checked) =>
+                updateSettings({ previewBeforeApply: checked })
+              }
+            />
           </SettingRow>
           <SettingRow
-            label="Backup before every write"
-            description="Auto-create a backup snapshot before each modification"
+            label={t("backupBeforeWrite")}
+            description={t("backupBeforeWriteDesc")}
           >
-            <Switch defaultChecked />
+            <Switch
+              checked={settings.backupBeforeWrite}
+              onCheckedChange={(checked) =>
+                updateSettings({ backupBeforeWrite: checked })
+              }
+            />
           </SettingRow>
           <SettingRow
-            label="Validate before writing"
-            description="Check for duplicate domains and invalid IPs before applying"
+            label={t("validateBeforeWrite")}
+            description={t("validateBeforeWriteDesc")}
           >
-            <Switch defaultChecked />
+            <Switch
+              checked={settings.validateBeforeWrite}
+              onCheckedChange={(checked) =>
+                updateSettings({ validateBeforeWrite: checked })
+              }
+            />
           </SettingRow>
         </SettingsSection>
 
         {/* Backups */}
         <SettingsSection
           icon={<ShieldCheck className="w-4 h-4 text-violet-400" />}
-          title="Backups"
+          title={t("backupSettings")}
         >
           <SettingRow
-            label="Backup directory"
-            description="Where hostpilot stores hosts file backups"
+            label={t("backupDirectory")}
+            description={t("backupDirectoryDesc")}
           >
             <div className="flex items-center gap-2">
               <Input
-                defaultValue="~/.hostpilot/backups"
+                value={settings.backupDirectory}
+                onChange={(e) =>
+                  updateSettings({ backupDirectory: e.target.value })
+                }
                 className="h-8 text-xs w-48 font-mono"
               />
-              <Button variant="outline" size="sm" className="h-8 text-xs">
-                Browse
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs"
+                onClick={handleBrowseBackupDir}
+              >
+                {t("browse")}
               </Button>
             </div>
           </SettingRow>
           <SettingRow
-            label="Keep backups"
-            description="Number of backup snapshots to retain"
+            label={t("keepBackups")}
+            description={t("keepBackupsDesc")}
           >
-            <Input defaultValue="10" className="h-8 text-xs w-20 text-center" type="number" />
+            <Input
+              value={settings.keepBackupsCount}
+              onChange={(e) =>
+                updateSettings({
+                  keepBackupsCount: parseInt(e.target.value) || 0,
+                })
+              }
+              className="h-8 text-xs w-20 text-center"
+              type="number"
+            />
           </SettingRow>
           <SettingRow
-            label="Auto-cleanup old backups"
-            description="Automatically delete backups beyond retention limit"
+            label={t("autoCleanup")}
+            description={t("autoCleanupDesc")}
           >
-            <Switch defaultChecked />
+            <Switch
+              checked={settings.autoCleanupBackups}
+              onCheckedChange={(checked) =>
+                updateSettings({ autoCleanupBackups: checked })
+              }
+            />
           </SettingRow>
         </SettingsSection>
 
         {/* Notifications */}
         <SettingsSection
           icon={<Bell className="w-4 h-4 text-amber-400" />}
-          title="Notifications"
+          title={t("notificationSettings")}
         >
           <SettingRow
-            label="Show apply notifications"
-            description="Notify when hosts file is successfully updated"
+            label={t("showApplyNotifications")}
+            description={t("showApplyNotificationsDesc")}
           >
-            <Switch defaultChecked />
+            <Switch
+              checked={settings.showApplyNotifications}
+              onCheckedChange={(checked) =>
+                updateSettings({ showApplyNotifications: checked })
+              }
+            />
           </SettingRow>
           <SettingRow
-            label="Show error alerts"
-            description="Alert when applying hosts entries fails"
+            label={t("showErrorAlerts")}
+            description={t("showErrorAlertsDesc")}
           >
-            <Switch defaultChecked />
+            <Switch
+              checked={settings.showErrorAlerts}
+              onCheckedChange={(checked) =>
+                updateSettings({ showErrorAlerts: checked })
+              }
+            />
           </SettingRow>
           <SettingRow
-            label="Port status alerts"
-            description="Notify when a tracked service goes offline"
+            label={t("portStatusAlerts")}
+            description={t("portStatusAlertsDesc")}
           >
-            <Switch />
+            <Switch
+              checked={settings.portStatusAlerts}
+              onCheckedChange={(checked) =>
+                updateSettings({ portStatusAlerts: checked })
+              }
+            />
           </SettingRow>
         </SettingsSection>
 
         {/* Appearance */}
         <SettingsSection
           icon={<Palette className="w-4 h-4 text-indigo-400" />}
-          title="Appearance"
+          title={t("appearanceSettings")}
         >
-          <SettingRow label="Color theme" description="Choose app theme">
+          <SettingRow
+            label={t("colorTheme")}
+            description={t("colorThemeDesc")}
+          >
             <div className="flex gap-1.5">
-              {["Dark", "Light", "System"].map((theme, i) => (
+              {["dark", "light", "system"].map((theme) => (
                 <button
                   key={theme}
+                  onClick={() => updateSettings({ colorTheme: theme as any })}
                   className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                    i === 0
+                    settings.colorTheme === theme
                       ? "bg-indigo-600 text-white"
                       : "bg-muted text-muted-foreground hover:bg-muted/80"
                   }`}
                 >
-                  {theme}
+                  {t(theme + "Theme")}
                 </button>
               ))}
             </div>
           </SettingRow>
           <SettingRow
-            label="Compact mode"
-            description="Reduce spacing for a denser layout"
+            label={t("compactMode")}
+            description={t("compactModeDesc")}
           >
-            <Switch />
+            <Switch
+              checked={settings.compactMode}
+              onCheckedChange={(checked) =>
+                updateSettings({ compactMode: checked })
+              }
+            />
+          </SettingRow>
+          <SettingRow
+            label={t("languageSetting")}
+            description={t("languageSettingDesc")}
+          >
+            <Select
+              value={settings.language}
+              onValueChange={(val) =>
+                updateSettings({ language: val as any })
+              }
+            >
+              <SelectTrigger className="h-8 text-xs w-32 bg-muted/30">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="en">English</SelectItem>
+                <SelectItem value="th">ไทย</SelectItem>
+              </SelectContent>
+            </Select>
           </SettingRow>
         </SettingsSection>
 
         {/* About */}
         <SettingsSection
           icon={<Info className="w-4 h-4 text-muted-foreground" />}
-          title="About"
+          title={t("aboutSettings")}
         >
-          <SettingRow label="Version" description="Current app version">
+          <SettingRow label={t("appVersion")} description="Current app version">
             <Badge className="bg-muted text-muted-foreground border-0 font-mono text-xs">
               v0.1.0
             </Badge>
           </SettingRow>
-          <SettingRow label="Check for updates" description="Last checked: today">
+          <SettingRow
+            label={t("checkUpdates")}
+            description={t("lastCheckedToday")}
+          >
             <Button variant="outline" size="sm" className="h-7 text-xs">
-              Check Now
+              {t("checkNow")}
             </Button>
           </SettingRow>
           <div className="py-4">
             <button className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
-              View open source licenses
+              {t("openSourceLicenses")}
               <ChevronRight className="w-3 h-3" />
             </button>
           </div>
@@ -226,4 +314,3 @@ export function SettingsPage() {
     </div>
   );
 }
-

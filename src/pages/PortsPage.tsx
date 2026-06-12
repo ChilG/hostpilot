@@ -17,16 +17,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useAppStore, type PortRule } from "@/store/AppStore";
 import { PortFormDialog } from "@/components/ports/PortFormDialog";
+import { useTranslation } from "@/i18n/translations";
 import { Plus, Pencil, Trash2, ExternalLink, RefreshCw, Plug } from "lucide-react";
-
-const statusConfig: Record<PortRule["status"], { label: string; className: string; dot: string }> = {
-  running: { label: "Running", className: "bg-emerald-500/15 text-emerald-400", dot: "bg-emerald-500" },
-  stopped: { label: "Stopped", className: "bg-red-500/15 text-red-400", dot: "bg-red-500" },
-  unknown: { label: "Unknown", className: "bg-amber-500/15 text-amber-400", dot: "bg-amber-400" },
-};
 
 export function PortsPage() {
   const { ports, updatePort, deletePort, checkPortLive } = useAppStore();
+  const { t } = useTranslation();
 
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
@@ -34,6 +30,12 @@ export function PortsPage() {
   const [deleteTarget, setDeleteTarget] = useState<PortRule | undefined>();
 
   const running = ports.filter((p) => p.status === "running").length;
+
+  const statusConfig: Record<PortRule["status"], { label: string; className: string; dot: string }> = {
+    running: { label: t("running"), className: "bg-emerald-500/15 text-emerald-400", dot: "bg-emerald-500" },
+    stopped: { label: t("stopped"), className: "bg-red-500/15 text-red-400", dot: "bg-red-500" },
+    unknown: { label: t("unknown"), className: "bg-amber-500/15 text-amber-400", dot: "bg-amber-400" },
+  };
 
   // Auto-scan ports on page load
   useEffect(() => {
@@ -61,7 +63,11 @@ export function PortsPage() {
   const handleDelete = () => {
     if (!deleteTarget) return;
     deletePort(deleteTarget.id);
-    toast.success(`Port rule for "${deleteTarget.domain}" deleted`);
+    toast.success(
+      t("locale") === "th"
+        ? `ลบกฎพอร์ตของ "${deleteTarget.domain}" เรียบร้อยแล้ว`
+        : `Port rule for "${deleteTarget.domain}" deleted`
+    );
     setDeleteTarget(undefined);
   };
 
@@ -78,20 +84,21 @@ export function PortsPage() {
   const checkAll = async () => {
     const enabledPorts = ports.filter((p) => p.enabled);
     if (enabledPorts.length === 0) {
-      toast.info("No active port rules to check");
+      toast.info(t("locale") === "th" ? "ไม่มีกฎพอร์ตที่เปิดใช้งานอยู่เพื่อตรวจสอบ" : "No active port rules to check");
       return;
     }
     
     toast.promise(
       Promise.all(enabledPorts.map((p) => checkPortLive(p.id, p.targetHost, p.port))),
       {
-        loading: "Scanning port services...",
+        loading: t("locale") === "th" ? "กำลังแสกนตรวจสอบการเชื่อมต่อพอร์ต..." : "Scanning port services...",
         success: () => {
-          // Recalculate running count
           const live = ports.filter((p) => p.status === "running").length;
-          return `Scan complete: ${live} services running`;
+          return t("locale") === "th"
+            ? `สแกนเสร็จสิ้น: ตรวจพบ ${live} บริการกำลังทำงาน`
+            : `Scan complete: ${live} services running`;
         },
-        error: "Port scan failed",
+        error: t("locale") === "th" ? "การแสกนตรวจสอบข้อผิดพลาด" : "Port scan failed",
       }
     );
   };
@@ -99,13 +106,13 @@ export function PortsPage() {
   return (
     <div className="flex flex-col h-full">
       <Topbar
-        title="Ports"
-        subtitle={`${running} services running · Port metadata for local domains`}
+        title={t("ports")}
+        subtitle={`${running} ${t("locale") === "th" ? "บริการกำลังทำงานอยู่" : "services running"} · ${t("portsSubtitle")}`}
         actions={
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5" onClick={checkAll}>
               <RefreshCw className="w-3.5 h-3.5" />
-              Check All
+              {t("locale") === "th" ? "ตรวจสอบทั้งหมด" : "Check All"}
             </Button>
             <Button
               size="sm"
@@ -113,7 +120,7 @@ export function PortsPage() {
               onClick={openCreate}
             >
               <Plus className="w-3.5 h-3.5" />
-              Add Rule
+              {t("addPort")}
             </Button>
           </div>
         }
@@ -150,7 +157,11 @@ export function PortsPage() {
                   checked={port.enabled}
                   onCheckedChange={() => {
                     updatePort(port.id, { enabled: !port.enabled });
-                    toast.success(`Port rule ${!port.enabled ? "enabled" : "disabled"}`);
+                    toast.success(
+                      t("locale") === "th"
+                        ? `กฎพอร์ตถูก ${!port.enabled ? "เปิดใช้งาน" : "ปิดใช้งาน"}`
+                        : `Port rule ${!port.enabled ? "enabled" : "disabled"}`
+                    );
                     if (!port.enabled) {
                       // Check status immediately when enabled
                       checkPortLive(port.id, port.targetHost, port.port);
@@ -175,24 +186,24 @@ export function PortsPage() {
               </div>
               <div className="flex items-center gap-3">
                 <Badge className={`border-0 text-[10px] ${cfg.className}`}>
-                  <span className={`w-1 h-1 rounded-full mr-1 inline-block ${cfg.dot}`} />
+                  <span className={`w-1.5 h-1.5 rounded-full mr-1 inline-block ${cfg.dot}`} />
                   {cfg.label}
                 </Badge>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-7 text-xs gap-1 text-indigo-400 border-indigo-400/30 hover:bg-indigo-500/10"
+                    className="h-7 text-xs gap-1 text-indigo-400 border-indigo-400/30 hover:bg-indigo-500/10 cursor-pointer"
                     disabled={!port.enabled}
                     onClick={() => handleOpen(port)}
                   >
                     <ExternalLink className="w-3 h-3" />
-                    Open
+                    {t("openInBrowser")}
                   </Button>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                    className="h-7 w-7 text-muted-foreground hover:text-foreground cursor-pointer"
                     onClick={() => openEdit(port)}
                   >
                     <Pencil className="w-3.5 h-3.5" />
@@ -200,7 +211,7 @@ export function PortsPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                    className="h-7 w-7 text-muted-foreground hover:text-destructive cursor-pointer"
                     onClick={() => setDeleteTarget(port)}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -214,7 +225,7 @@ export function PortsPage() {
         {ports.length === 0 && (
           <div className="text-center py-16 text-muted-foreground">
             <Plug className="w-10 h-10 mx-auto mb-3 opacity-20" />
-            <p className="text-sm">No port rules yet</p>
+            <p className="text-sm">{t("noData")}</p>
           </div>
         )}
       </div>
@@ -232,18 +243,18 @@ export function PortsPage() {
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(undefined)}>
         <AlertDialogContent className="dark">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete port rule?</AlertDialogTitle>
+            <AlertDialogTitle>{t("deletePortConfirm")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Port rule for <code className="font-mono">{deleteTarget?.domain}</code> will be permanently removed.
+              {t("deletePortText")} (<code className="font-mono">{deleteTarget?.domain}</code>)
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-red-600 hover:bg-red-700 text-white"
             >
-              Delete
+              {t("delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

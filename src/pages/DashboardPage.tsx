@@ -15,6 +15,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useAppStore, isTauri } from "@/store/AppStore";
+import { useTranslation } from "@/i18n/translations";
 import {
   Globe,
   BookMarked,
@@ -34,7 +35,9 @@ export function DashboardPage() {
     activateProfile,
     addBackup,
     restoreBackup,
+    settings,
   } = useAppStore();
+  const { t } = useTranslation();
 
   const [quickApplyConfirmOpen, setQuickApplyConfirmOpen] = useState(false);
   const [restoreConfirmOpen, setRestoreConfirmOpen] = useState(false);
@@ -88,13 +91,39 @@ export function DashboardPage() {
 
   const handleQuickApply = async () => {
     try {
-      // 1. Create backup first
-      await addBackup(`Auto-backup before quick apply (profile: ${activeProfile.name})`);
-
       // 2. Filter entries associated with the active profile
       const profileEntries = hosts.filter((h) =>
         activeProfile.entryIds?.includes(h.id)
       );
+
+      // Validate before write if enabled
+      if (settings.validateBeforeWrite) {
+        const ipRegex = /^[0-9a-fA-F.:%]+$/;
+        const domainRegex = /^[a-zA-Z0-9][-a-zA-Z0-9.]*$/;
+        for (const entry of profileEntries) {
+          if (entry.enabled) {
+            const ip = entry.ip.trim();
+            const domain = entry.domain.trim();
+            if (!ip) {
+              throw new Error(`IP address cannot be empty for domain "${domain}"`);
+            }
+            if (!domain) {
+              throw new Error("Domain name cannot be empty");
+            }
+            if (!ipRegex.test(ip)) {
+              throw new Error(`Invalid IP address format: "${ip}"`);
+            }
+            if (!domainRegex.test(domain)) {
+              throw new Error(`Invalid domain name format: "${domain}"`);
+            }
+          }
+        }
+      }
+
+      // 1. Create backup first if enabled
+      if (settings.backupBeforeWrite) {
+        await addBackup(`Auto-backup before quick apply (profile: ${activeProfile.name})`);
+      }
 
       // 3. Write hosts block via Tauri command
       if (isTauri) {
@@ -104,14 +133,18 @@ export function DashboardPage() {
         });
       }
 
-      toast.success("Successfully applied to hosts file!", {
-        description: `Active profile "${activeProfile.name}" hosts synced, and hosts file backed up.`,
-      });
+      if (settings.showApplyNotifications) {
+        toast.success("Successfully applied to hosts file!", {
+          description: `Active profile "${activeProfile.name}" hosts synced.`,
+        });
+      }
     } catch (e) {
       console.error("Failed to apply configuration:", e);
-      toast.error("Elevation or Apply failed", {
-        description: String(e),
-      });
+      if (settings.showErrorAlerts) {
+        toast.error("Elevation or Apply failed", {
+          description: String(e),
+        });
+      }
     } finally {
       setQuickApplyConfirmOpen(false);
     }
@@ -153,22 +186,26 @@ export function DashboardPage() {
     }
   };
 
-
-
   return (
     <div className="flex flex-col h-full">
       <Topbar
-        title="Dashboard"
-        subtitle="Overview of your local environment"
+        title={t("dashboard")}
+        subtitle={t("dashboardSubtitle")}
         actions={
           <Button
             size="sm"
             className="bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5 h-8 text-xs"
-            onClick={() => setQuickApplyConfirmOpen(true)}
+            onClick={() => {
+              if (settings.previewBeforeApply) {
+                setQuickApplyConfirmOpen(true);
+              } else {
+                handleQuickApply();
+              }
+            }}
             disabled={!activeProfile || activeProfile.name === "None"}
           >
             <Zap className="w-3.5 h-3.5" />
-            Quick Apply
+            {t("applyChanges")}
           </Button>
         }
       />
@@ -177,21 +214,33 @@ export function DashboardPage() {
         <div className="grid grid-cols-3 gap-4">
           <StatusCard
             icon={<BookMarked className="w-4 h-4 text-indigo-400" />}
-            label="Active Profile"
+            label={t("activeProfile")}
             value={activeProfile.name}
-            badge={<Badge className="bg-emerald-500/15 text-emerald-400 border-0 text-[10px] px-1.5 py-0.5">Active</Badge>}
+            badge={
+              <Badge className="bg-emerald-500/15 text-emerald-400 border-0 text-[10px] px-1.5 py-0.5 animate-fade-in">
+                {t("active")}
+              </Badge>
+            }
           />
           <StatusCard
             icon={<Globe className="w-4 h-4 text-sky-400" />}
-            label="Enabled Hosts"
+            label={t("hosts")}
             value={`${enabledHosts.length} / ${hosts.length}`}
-            badge={<Badge className="bg-sky-500/15 text-sky-400 border-0 text-[10px] px-1.5 py-0.5">Synced</Badge>}
+            badge={
+              <Badge className="bg-sky-500/15 text-sky-400 border-0 text-[10px] px-1.5 py-0.5">
+                {t("active")}
+              </Badge>
+            }
           />
           <StatusCard
             icon={<Plug className="w-4 h-4 text-amber-400" />}
-            label="Running Ports"
+            label={t("ports")}
             value={`${runningPorts.length} / ${ports.length}`}
-            badge={<Badge className="bg-amber-500/15 text-amber-400 border-0 text-[10px] px-1.5 py-0.5">Live</Badge>}
+            badge={
+              <Badge className="bg-amber-500/15 text-amber-400 border-0 text-[10px] px-1.5 py-0.5">
+                Live
+              </Badge>
+            }
           />
         </div>
 
@@ -201,10 +250,10 @@ export function DashboardPage() {
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <div className="flex items-center gap-2">
                 <Plug className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Recent Port Rules</span>
+                <span className="text-sm font-medium">{t("ports")}</span>
               </div>
               <Badge className="bg-amber-500/15 text-amber-400 border-0 text-[10px] px-1.5 py-0.5">
-                {runningPorts.length} Active
+                {runningPorts.length} {t("active")}
               </Badge>
             </div>
             <div className="divide-y divide-border">
@@ -235,7 +284,7 @@ export function DashboardPage() {
                           : "bg-muted text-muted-foreground"
                       }`}
                     >
-                      {port.status === "running" ? "Running" : "Stopped"}
+                      {port.status === "running" ? t("running") : t("stopped")}
                     </Badge>
                     <Button
                       variant="outline"
@@ -247,13 +296,13 @@ export function DashboardPage() {
                       }}
                     >
                       <ExternalLink className="w-3 h-3" />
-                      Open
+                      {t("openInBrowser")}
                     </Button>
                   </div>
                 </div>
               ))}
               {ports.length === 0 && (
-                <p className="text-xs text-muted-foreground text-center py-6">No port rules configured</p>
+                <p className="text-xs text-muted-foreground text-center py-6">{t("noData")}</p>
               )}
             </div>
           </div>
@@ -264,18 +313,18 @@ export function DashboardPage() {
             <div className="rounded-xl border border-border bg-card p-5 space-y-3">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                <span className="text-sm font-medium">Hosts File</span>
+                <span className="text-sm font-medium">{t("hostsFileSettings")}</span>
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Path</span>
-                  <span className="font-mono text-foreground/80">
+                  <span className="text-muted-foreground">{t("hostsFilePath")}</span>
+                  <span className="font-mono text-foreground/80 truncate max-w-[120px]">
                     {isTauri ? (navigator.userAgent.includes("Windows") ? "C:\\...\\etc\\hosts" : "/etc/hosts") : "/etc/hosts"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Status</span>
-                  <Badge className="bg-emerald-500/15 text-emerald-400 border-0 text-[10px] px-1.5">Synced</Badge>
+                  <span className="text-muted-foreground">{t("status")}</span>
+                  <Badge className="bg-emerald-500/15 text-emerald-400 border-0 text-[10px] px-1.5">{t("active")}</Badge>
                 </div>
               </div>
             </div>
@@ -285,7 +334,7 @@ export function DashboardPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-violet-400" />
-                  <span className="text-sm font-medium">Last Backup</span>
+                  <span className="text-sm font-medium">{t("backups")}</span>
                 </div>
               </div>
               <div className="space-y-2">
@@ -298,7 +347,7 @@ export function DashboardPage() {
                     <p className="text-xs text-muted-foreground">{lastBackup.size}</p>
                   </>
                 ) : (
-                  <p className="text-xs text-muted-foreground">No backups found.</p>
+                  <p className="text-xs text-muted-foreground">{t("noData")}</p>
                 )}
               </div>
               <Button
@@ -308,7 +357,7 @@ export function DashboardPage() {
                 disabled={!lastBackup}
                 onClick={() => setRestoreConfirmOpen(true)}
               >
-                Restore
+                {t("restore")}
               </Button>
             </div>
 
@@ -317,7 +366,7 @@ export function DashboardPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-indigo-400" />
-                  <span className="text-sm font-medium">Recent Profiles</span>
+                  <span className="text-sm font-medium">{t("recentProfiles")}</span>
                 </div>
               </div>
               <div className="space-y-2">
@@ -332,7 +381,7 @@ export function DashboardPage() {
                     </div>
                     <div className="flex-shrink-0">
                       {profile.active ? (
-                        <Badge className="bg-emerald-500/15 text-emerald-400 border-0 text-[10px]">Active</Badge>
+                        <Badge className="bg-emerald-500/15 text-emerald-400 border-0 text-[10px]">{t("active")}</Badge>
                       ) : (
                         <Button
                           variant="outline"
@@ -341,26 +390,24 @@ export function DashboardPage() {
                           onClick={() => handleActivateProfile(profile.id, profile.name)}
                         >
                           <Zap className="w-2.5 h-2.5" />
-                          Activate
+                          {t("confirm")}
                         </Button>
                       )}
                     </div>
                   </div>
                 ))}
                 {profiles.length === 0 && (
-                  <p className="text-xs text-muted-foreground text-center py-2">No profiles created</p>
+                  <p className="text-xs text-muted-foreground text-center py-2">{t("noData")}</p>
                 )}
               </div>
             </div>
-
-
           </div>
         </div>
 
         {/* Live Diff Preview */}
         <div className="rounded-xl border border-border bg-card">
           <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-            <span className="text-sm font-medium">Hosts File Changes Preview (Diff)</span>
+            <span className="text-sm font-medium">{t("hostsFilePreview")}</span>
             <Badge className="bg-emerald-500/15 text-emerald-400 border-0 text-[10px]">Live</Badge>
           </div>
           <div className="p-5">
@@ -382,7 +429,7 @@ export function DashboardPage() {
               </pre>
             ) : (
               <p className="text-xs text-muted-foreground text-center py-4 bg-muted/20 rounded-lg">
-                No changes to display. Select a profile or enable hosts.
+                {t("noData")}
               </p>
             )}
           </div>
@@ -393,17 +440,15 @@ export function DashboardPage() {
       <AlertDialog open={quickApplyConfirmOpen} onOpenChange={setQuickApplyConfirmOpen}>
         <AlertDialogContent className="dark">
           <AlertDialogHeader>
-            <AlertDialogTitle>Apply active profile configuration?</AlertDialogTitle>
+            <AlertDialogTitle>{t("applyConfirmation")}</AlertDialogTitle>
             <AlertDialogDescription>
-              This will write the hosts configuration for the active profile "{activeProfile.name}" to your local hosts file. 
-              {isTauri && " You will be prompted by the system for administrator permissions to apply changes."}
-              An automatic backup of your current setup will be generated before writing.
+              {t("applyConfirmText")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleQuickApply} className="bg-indigo-600 hover:bg-indigo-700 text-white">
-              Apply
+              {t("confirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -413,16 +458,15 @@ export function DashboardPage() {
       <AlertDialog open={restoreConfirmOpen} onOpenChange={setRestoreConfirmOpen}>
         <AlertDialogContent className="dark">
           <AlertDialogHeader>
-            <AlertDialogTitle>Restore last backup?</AlertDialogTitle>
+            <AlertDialogTitle>{t("restoreBackupConfirm")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to restore the system configuration from the backup created on {lastBackup ? new Date(lastBackup.createdAt).toLocaleString() : ""}? 
-              This will overwrite your current configuration. You may be prompted for administrator credentials.
+              {t("restoreBackupText")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleRestore} className="bg-indigo-600 hover:bg-indigo-700 text-white">
-              Restore
+              {t("confirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

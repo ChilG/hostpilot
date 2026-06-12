@@ -59,6 +59,24 @@ pub struct BackupRecord {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct AppSettings {
+    pub hosts_path: String,
+    pub preview_before_apply: bool,
+    pub backup_before_write: bool,
+    pub validate_before_write: bool,
+    pub backup_directory: String,
+    pub keep_backups_count: i32,
+    pub auto_cleanup_backups: bool,
+    pub show_apply_notifications: bool,
+    pub show_error_alerts: bool,
+    pub port_status_alerts: bool,
+    pub color_theme: String,
+    pub compact_mode: bool,
+    pub language: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AppConfig {
     pub hosts: Vec<HostEntry>,
     pub groups: Vec<HostGroup>,
@@ -67,6 +85,7 @@ pub struct AppConfig {
     pub backups: Vec<BackupRecord>,
     #[serde(default)]
     pub onboarded: bool,
+    pub settings: Option<AppSettings>,
 }
 
 impl Default for AppConfig {
@@ -78,9 +97,11 @@ impl Default for AppConfig {
             ports: vec![],
             backups: vec![],
             onboarded: false,
+            settings: None,
         }
     }
 }
+
 
 /// Loads app configuration from SQLite database, initializing tables if missing.
 pub fn load_config(app_handle: &tauri::AppHandle) -> Result<AppConfig, String> {

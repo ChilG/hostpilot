@@ -12,6 +12,8 @@ import {
   Anchor,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/i18n/translations";
+import { useAppStore } from "@/store/AppStore";
 
 async function startDrag() {
   await getCurrentWindow().startDragging();
@@ -28,16 +30,16 @@ export type Page =
   | "backups"
   | "settings";
 
-const navItems: { page: Page; label: string; icon: React.ElementType }[] = [
-  { page: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { page: "hosts", label: "Hosts", icon: Globe },
-  { page: "groups", label: "Groups", icon: Layers },
-  { page: "profiles", label: "Profiles", icon: BookMarked },
-  { page: "ports", label: "Ports", icon: Plug },
+const navItems: { page: Page; icon: React.ElementType }[] = [
+  { page: "dashboard", icon: LayoutDashboard },
+  { page: "hosts", icon: Globe },
+  { page: "groups", icon: Layers },
+  { page: "profiles", icon: BookMarked },
+  { page: "ports", icon: Plug },
 
-  { page: "import-export", label: "Import / Export", icon: ArrowLeftRight },
-  { page: "backups", label: "Backups", icon: ShieldCheck },
-  { page: "settings", label: "Settings", icon: Settings },
+  { page: "import-export", icon: ArrowLeftRight },
+  { page: "backups", icon: ShieldCheck },
+  { page: "settings", icon: Settings },
 ];
 
 interface SidebarProps {
@@ -46,6 +48,11 @@ interface SidebarProps {
 }
 
 export function Sidebar({ activePage, onNavigate }: SidebarProps) {
+  const { t } = useTranslation();
+  const { profiles } = useAppStore();
+
+  const activeProfile = profiles.find((p) => p.active);
+
   return (
     <aside className="w-56 flex-shrink-0 flex flex-col bg-sidebar border-r border-sidebar-border h-full">
       {/* ── Traffic-light zone ────────────────────────────────────────────
@@ -54,7 +61,7 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
       ──────────────────────────────────────────────────────────────────── */}
       <div
         onMouseDown={startDrag}
-        className="h-[52px] w-full flex-shrink-0 select-none cursor-default"
+        className="h-13 w-full flex-shrink-0 select-none cursor-default"
       />
 
       {/* Brand row — NOT a drag region so future click handlers work */}
@@ -69,7 +76,7 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
 
       {/* Nav */}
       <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
-        {navItems.map(({ page, label, icon: Icon }) => {
+        {navItems.map(({ page, icon: Icon }) => {
           const active = activePage === page;
           return (
             <button
@@ -88,7 +95,7 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
                   active ? "text-indigo-500" : "text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70"
                 )}
               />
-              <span className="flex-1 text-left">{label}</span>
+              <span className="flex-1 text-left">{t(page)}</span>
               {active && (
                 <ChevronRight className="w-3.5 h-3.5 text-indigo-500 opacity-60" />
               )}
@@ -100,8 +107,13 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
       {/* Footer status */}
       <div className="px-4 py-3 border-t border-sidebar-border">
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-xs text-sidebar-foreground/50">Local Dev • Active</span>
+          <div className={cn(
+            "w-2 h-2 rounded-full animate-pulse",
+            activeProfile ? "bg-emerald-500" : "bg-zinc-500"
+          )} />
+          <span className="text-xs text-sidebar-foreground/50 truncate max-w-[170px]" title={activeProfile ? `${activeProfile.name} • ${t("active")}` : t("inactive")}>
+            {activeProfile ? `${activeProfile.name} • ${t("active")}` : t("inactive")}
+          </span>
         </div>
       </div>
     </aside>

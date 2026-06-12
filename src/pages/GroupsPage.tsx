@@ -14,10 +14,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useAppStore, type HostGroup } from "@/store/AppStore";
 import { GroupFormDialog } from "@/components/groups/GroupFormDialog";
+import { useTranslation } from "@/i18n/translations";
 import { Plus, Pencil, Trash2, Layers } from "lucide-react";
 
 export function GroupsPage() {
   const { groups, hosts, deleteGroup } = useAppStore();
+  const { t } = useTranslation();
 
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
@@ -41,7 +43,9 @@ export function GroupsPage() {
     const assignedCount = hosts.filter((h) => h.groupId === deleteTarget.id).length;
     deleteGroup(deleteTarget.id);
     toast.success(
-      `Group "${deleteTarget.name}" deleted${assignedCount > 0 ? ` — ${assignedCount} host(s) unassigned` : ""}`
+      t("locale") === "th"
+        ? `ลบกลุ่ม "${deleteTarget.name}" เรียบร้อยแล้ว${assignedCount > 0 ? ` — มี ${assignedCount} โฮสต์ถูกถอดการเชื่อมโยง` : ""}`
+        : `Group "${deleteTarget.name}" deleted${assignedCount > 0 ? ` — ${assignedCount} host(s) unassigned` : ""}`
     );
     setDeleteTarget(undefined);
   };
@@ -49,8 +53,8 @@ export function GroupsPage() {
   return (
     <div className="flex flex-col h-full">
       <Topbar
-        title="Groups"
-        subtitle="Organize hosts by category"
+        title={t("groups")}
+        subtitle={t("groupsSubtitle")}
         actions={
           <Button
             size="sm"
@@ -58,7 +62,7 @@ export function GroupsPage() {
             onClick={openCreate}
           >
             <Plus className="w-3.5 h-3.5" />
-            New Group
+            {t("addGroup")}
           </Button>
         }
       />
@@ -117,18 +121,18 @@ export function GroupsPage() {
                 </div>
 
                 {/* Stats */}
-                <div className="flex items-center gap-4 pt-1 border-t border-border">
+                <div className="flex items-center gap-4 pt-4 pl-2 border-t border-border">
                   <div>
                     <p className="text-lg font-bold leading-none">{groupHosts.length}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">Total hosts</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{t("totalHosts")}</p>
                   </div>
                   <div>
                     <p className="text-lg font-bold leading-none text-emerald-500">{enabledCount}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">Enabled</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{t("enabled")}</p>
                   </div>
                   <div>
                     <p className="text-lg font-bold leading-none text-muted-foreground">{groupHosts.length - enabledCount}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">Disabled</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{t("inactive")}</p>
                   </div>
                 </div>
 
@@ -155,12 +159,12 @@ export function GroupsPage() {
           {/* Add new group placeholder */}
           <button
             onClick={openCreate}
-            className="rounded-xl border border-dashed border-border bg-transparent p-5 flex flex-col items-center justify-center gap-3 text-muted-foreground hover:text-foreground hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all min-h-[200px]"
+            className="rounded-xl border border-dashed border-border bg-transparent p-5 flex flex-col items-center justify-center gap-3 text-muted-foreground hover:text-foreground hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all min-h-[200px] cursor-pointer"
           >
             <div className="w-10 h-10 rounded-full border-2 border-dashed border-current flex items-center justify-center">
               <Plus className="w-5 h-5" />
             </div>
-            <p className="text-sm font-medium">New Group</p>
+            <p className="text-sm font-medium">{t("addGroup")}</p>
           </button>
         </div>
       </div>
@@ -178,20 +182,24 @@ export function GroupsPage() {
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(undefined)}>
         <AlertDialogContent className="dark">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete group?</AlertDialogTitle>
+            <AlertDialogTitle>{t("deleteGroupConfirm")}</AlertDialogTitle>
             <AlertDialogDescription>
-              "{deleteTarget?.name}" will be deleted.{" "}
+              {t("locale") === "th"
+                ? `ลบกลุ่ม "${deleteTarget?.name}" ออกจากระบบ?`
+                : `"${deleteTarget?.name}" will be deleted.`}{" "}
               {hosts.filter((h) => h.groupId === deleteTarget?.id).length > 0 &&
-                `${hosts.filter((h) => h.groupId === deleteTarget?.id).length} host(s) will be unassigned.`}
+                (t("locale") === "th"
+                  ? `โฮสต์จำนวน ${hosts.filter((h) => h.groupId === deleteTarget?.id).length} รายการจะถูกถอดกลุ่ม`
+                  : `${hosts.filter((h) => h.groupId === deleteTarget?.id).length} host(s) will be unassigned.`)}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               onClick={handleDelete}
             >
-              Delete
+              {t("delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

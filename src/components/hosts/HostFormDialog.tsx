@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAppStore, type HostEntry } from "@/store/AppStore";
+import { useTranslation } from "@/i18n/translations";
 
 type Props = {
   open: boolean;
@@ -37,6 +38,7 @@ const DEFAULT_FORM = {
 
 export function HostFormDialog({ open, onOpenChange, mode, host, onSave }: Props) {
   const { groups, addHost, updateHost } = useAppStore();
+  const { t } = useTranslation();
   const [form, setForm] = useState(DEFAULT_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -60,18 +62,26 @@ export function HostFormDialog({ open, onOpenChange, mode, host, onSave }: Props
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!form.domain.trim()) e.domain = "Domain is required";
-    else if (!/^[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/.test(form.domain.trim()))
-      e.domain = "Invalid domain format";
-    if (!form.ip.trim()) e.ip = "IP is required";
-    else if (!/^(\d{1,3}\.){3}\d{1,3}$/.test(form.ip.trim()))
-      e.ip = "Invalid IP address";
+    if (!form.domain.trim()) {
+      e.domain = t("locale") === "th" ? "กรุณาระบุชื่อโดเมน" : "Domain is required";
+    } else if (!/^[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/.test(form.domain.trim())) {
+      e.domain = t("invalidDomainError");
+    }
+    
+    if (!form.ip.trim()) {
+      e.ip = t("locale") === "th" ? "กรุณาระบุไอพีแอดเดรส" : "IP is required";
+    } else if (!/^(\d{1,3}\.){3}\d{1,3}$/.test(form.ip.trim())) {
+      e.ip = t("invalidIpError");
+    }
     return e;
   };
 
   const handleSave = () => {
     const e = validate();
-    if (Object.keys(e).length) { setErrors(e); return; }
+    if (Object.keys(e).length) {
+      setErrors(e);
+      return;
+    }
 
     const payload = {
       domain: form.domain.trim(),
@@ -95,15 +105,15 @@ export function HostFormDialog({ open, onOpenChange, mode, host, onSave }: Props
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md dark">
         <DialogHeader>
-          <DialogTitle>{mode === "create" ? "Add Host Entry" : "Edit Host Entry"}</DialogTitle>
+          <DialogTitle>{mode === "create" ? t("addHost") : t("editHost")}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
           <div className="space-y-1.5">
-            <Label htmlFor="host-domain">Domain *</Label>
+            <Label htmlFor="host-domain">{t("domain")} *</Label>
             <Input
               id="host-domain"
-              placeholder="e.g. web.local"
+              placeholder={t("domainPlaceholder")}
               value={form.domain}
               onChange={(e) => setForm((f) => ({ ...f, domain: e.target.value }))}
               className={errors.domain ? "border-red-500" : ""}
@@ -112,10 +122,10 @@ export function HostFormDialog({ open, onOpenChange, mode, host, onSave }: Props
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="host-ip">IP Address *</Label>
+            <Label htmlFor="host-ip">{t("ipAddress")} *</Label>
             <Input
               id="host-ip"
-              placeholder="127.0.0.1"
+              placeholder={t("ipPlaceholder")}
               value={form.ip}
               onChange={(e) => setForm((f) => ({ ...f, ip: e.target.value }))}
               className={errors.ip ? "border-red-500" : ""}
@@ -124,16 +134,16 @@ export function HostFormDialog({ open, onOpenChange, mode, host, onSave }: Props
           </div>
 
           <div className="space-y-1.5">
-            <Label>Group</Label>
+            <Label>{t("group")}</Label>
             <Select
               value={form.groupId || "none"}
               onValueChange={(v) => setForm((f) => ({ ...f, groupId: v === "none" ? "" : v }))}
             >
               <SelectTrigger>
-                <SelectValue placeholder="No group" />
+                <SelectValue placeholder={t("selectGroup")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">No group</SelectItem>
+                <SelectItem value="none">{t("locale") === "th" ? "ไม่มีกลุ่ม" : "No group"}</SelectItem>
                 {groups.map((g) => (
                   <SelectItem key={g.id} value={g.id}>
                     {g.name}
@@ -144,10 +154,10 @@ export function HostFormDialog({ open, onOpenChange, mode, host, onSave }: Props
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="host-desc">Description</Label>
+            <Label htmlFor="host-desc">{t("description")}</Label>
             <Input
               id="host-desc"
-              placeholder="Optional description"
+              placeholder={t("descPlaceholder")}
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
             />
@@ -156,13 +166,13 @@ export function HostFormDialog({ open, onOpenChange, mode, host, onSave }: Props
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t("cancel")}
           </Button>
           <Button
             className="bg-indigo-600 hover:bg-indigo-700 text-white"
             onClick={handleSave}
           >
-            {mode === "create" ? "Add Host" : "Save Changes"}
+            {mode === "create" ? t("add") : t("save")}
           </Button>
         </DialogFooter>
       </DialogContent>

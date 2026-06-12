@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useAppStore, type HostEntry } from "@/store/AppStore";
 import { HostFormDialog } from "@/components/hosts/HostFormDialog";
+import { useTranslation } from "@/i18n/translations";
 import { Plus, Search, Pencil, Trash2, Filter, Globe } from "lucide-react";
 
 const sourceColors: Record<HostEntry["source"], string> = {
@@ -26,6 +27,7 @@ const sourceColors: Record<HostEntry["source"], string> = {
 
 export function HostsPage() {
   const { hosts, groups, updateHost, deleteHost } = useAppStore();
+  const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [filterGroup, setFilterGroup] = useState<string | null>(null);
 
@@ -68,8 +70,8 @@ export function HostsPage() {
   return (
     <div className="flex flex-col h-full">
       <Topbar
-        title="Hosts"
-        subtitle={`${hosts.filter((h) => h.enabled).length} enabled of ${hosts.length} total`}
+        title={t("hosts")}
+        subtitle={`${hosts.filter((h) => h.enabled).length} ${t("active")} / ${hosts.length} ${t("hosts")}`}
         actions={
           <Button
             size="sm"
@@ -77,7 +79,7 @@ export function HostsPage() {
             onClick={openCreate}
           >
             <Plus className="w-3.5 h-3.5" />
-            Add Host
+            {t("addHost")}
           </Button>
         }
       />
@@ -89,29 +91,29 @@ export function HostsPage() {
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
             <Input
               className="pl-8 h-8 text-xs"
-              placeholder="Search domains, IPs..."
+              placeholder={t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <div className="flex items-center gap-1.5">
-            <Filter className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">Group:</span>
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+            <Filter className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+            <span className="text-xs text-muted-foreground flex-shrink-0">{t("group")}:</span>
             <button
               onClick={() => setFilterGroup(null)}
-              className={`text-xs px-2.5 py-1 rounded-full transition-colors ${
+              className={`text-xs px-2.5 py-1 rounded-full transition-colors flex-shrink-0 cursor-pointer ${
                 filterGroup === null
                   ? "bg-indigo-600 text-white"
                   : "bg-muted text-muted-foreground hover:bg-muted/80"
               }`}
             >
-              All
+              {t("locale") === "th" ? "ทั้งหมด" : "All"}
             </button>
             {groups.map((g) => (
               <button
                 key={g.id}
                 onClick={() => setFilterGroup(filterGroup === g.id ? null : g.id)}
-                className={`text-xs px-2.5 py-1 rounded-full transition-colors ${
+                className={`text-xs px-2.5 py-1 rounded-full transition-colors flex-shrink-0 cursor-pointer ${
                   filterGroup === g.id
                     ? "text-white"
                     : "bg-muted text-muted-foreground hover:bg-muted/80"
@@ -130,12 +132,12 @@ export function HostsPage() {
             <thead className="sticky top-0 bg-background border-b border-border">
               <tr>
                 <th className="text-left text-xs text-muted-foreground font-medium px-6 py-3 w-10">On</th>
-                <th className="text-left text-xs text-muted-foreground font-medium px-3 py-3">Domain</th>
-                <th className="text-left text-xs text-muted-foreground font-medium px-3 py-3">IP</th>
-                <th className="text-left text-xs text-muted-foreground font-medium px-3 py-3">Group</th>
+                <th className="text-left text-xs text-muted-foreground font-medium px-3 py-3">{t("domain")}</th>
+                <th className="text-left text-xs text-muted-foreground font-medium px-3 py-3">{t("ipAddress")}</th>
+                <th className="text-left text-xs text-muted-foreground font-medium px-3 py-3">{t("group")}</th>
                 <th className="text-left text-xs text-muted-foreground font-medium px-3 py-3">Source</th>
-                <th className="text-left text-xs text-muted-foreground font-medium px-3 py-3">Description</th>
-                <th className="text-right text-xs text-muted-foreground font-medium px-6 py-3">Actions</th>
+                <th className="text-left text-xs text-muted-foreground font-medium px-3 py-3">{t("description")}</th>
+                <th className="text-right text-xs text-muted-foreground font-medium px-6 py-3">{t("actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -143,7 +145,7 @@ export function HostsPage() {
                 <tr>
                   <td colSpan={7} className="text-center py-12 text-muted-foreground text-sm">
                     <Globe className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                    No hosts found
+                    {t("noData")}
                   </td>
                 </tr>
               )}
@@ -159,7 +161,7 @@ export function HostsPage() {
                         checked={host.enabled}
                         onCheckedChange={() => {
                           updateHost(host.id, { enabled: !host.enabled });
-                          toast.success(`${host.domain} ${!host.enabled ? "enabled" : "disabled"}`);
+                          toast.success(`${host.domain} ${!host.enabled ? t("active") : t("inactive")}`);
                         }}
                         className="scale-90"
                       />
@@ -231,18 +233,18 @@ export function HostsPage() {
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(undefined)}>
         <AlertDialogContent className="dark">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete host entry?</AlertDialogTitle>
+            <AlertDialogTitle>{t("deleteHostConfirm")}</AlertDialogTitle>
             <AlertDialogDescription>
-              <code className="font-mono">{deleteTarget?.domain}</code> will be permanently removed. This action cannot be undone.
+              {t("deleteHostText")} (<code className="font-mono">{deleteTarget?.domain}</code>)
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               onClick={handleDelete}
             >
-              Delete
+              {t("delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

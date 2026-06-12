@@ -209,6 +209,14 @@ pub fn load_config_from_db(app_handle: &tauri::AppHandle) -> Result<AppConfig, S
         Err(rusqlite::Error::QueryReturnedNoRows) => false,
         Err(e) => return Err(e.to_string()),
     };
+
+    let mut stmt = conn.prepare("SELECT value FROM app_state WHERE key = 'settings'")
+        .map_err(|e| e.to_string())?;
+    let settings = match stmt.query_row([], |row| row.get::<_, String>(0)) {
+        Ok(val) => serde_json::from_str::<crate::config::AppSettings>(&val).ok(),
+        Err(rusqlite::Error::QueryReturnedNoRows) => None,
+        Err(e) => return Err(e.to_string()),
+    };
     
     Ok(AppConfig {
         hosts,
@@ -217,6 +225,7 @@ pub fn load_config_from_db(app_handle: &tauri::AppHandle) -> Result<AppConfig, S
         ports,
         backups,
         onboarded,
+        settings,
     })
 }
 
@@ -312,6 +321,15 @@ pub fn save_config_to_db(app_handle: &tauri::AppHandle, config: &AppConfig) -> R
         "INSERT INTO app_state (key, value) VALUES ('onboarded', ?)",
         params![if config.onboarded { "true" } else { "false" }],
     ).map_err(|e| format!("Failed to insert app state: {}", e))?;
+
+    if let Some(ref settings) = config.settings {
+        if let Ok(settings_json) = serde_json::to_string(settings) {
+            tx.execute(
+                "INSERT INTO app_state (key, value) VALUES ('settings', ?)",
+                params![settings_json],
+            ).map_err(|e| format!("Failed to insert settings: {}", e))?;
+        }
+    }
     
     tx.commit().map_err(|e| format!("Failed to commit transaction: {}", e))?;
     Ok(())

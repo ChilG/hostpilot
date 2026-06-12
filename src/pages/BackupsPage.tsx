@@ -15,10 +15,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useAppStore, type Backup, isTauri } from "@/store/AppStore";
 import { BackupCreateDialog } from "@/components/backups/BackupCreateDialog";
+import { useTranslation } from "@/i18n/translations";
 import { ShieldCheck, RotateCcw, Trash2, Download, Plus, Clock } from "lucide-react";
 
 export function BackupsPage() {
   const { backups, deleteBackup, restoreBackup } = useAppStore();
+  const { t } = useTranslation();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Backup | undefined>();
@@ -27,7 +29,9 @@ export function BackupsPage() {
   const handleDelete = () => {
     if (!deleteTarget) return;
     deleteBackup(deleteTarget.id);
-    toast.success("Backup deleted");
+    toast.success(
+      t("locale") === "th" ? "ลบไฟล์สำรองข้อมูลเรียบร้อยแล้ว" : "Backup deleted"
+    );
     setDeleteTarget(undefined);
   };
 
@@ -57,7 +61,9 @@ export function BackupsPage() {
     a.download = `hosts-backup-${backup.id}.txt`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success("Backup downloaded");
+    toast.success(
+      t("locale") === "th" ? "ดาวน์โหลดไฟล์สำรองข้อมูลสำเร็จ" : "Backup downloaded"
+    );
   };
 
   const totalSize = backups.reduce((sum, b) => {
@@ -68,8 +74,8 @@ export function BackupsPage() {
   return (
     <div className="flex flex-col h-full">
       <Topbar
-        title="Backups"
-        subtitle="Automatic snapshots of your hosts file before every write"
+        title={t("backups")}
+        subtitle={t("backupsSubtitle")}
         actions={
           <Button
             size="sm"
@@ -77,7 +83,7 @@ export function BackupsPage() {
             onClick={() => setCreateOpen(true)}
           >
             <Plus className="w-3.5 h-3.5" />
-            Create Backup
+            {t("createBackup")}
           </Button>
         }
       />
@@ -86,10 +92,13 @@ export function BackupsPage() {
         <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 px-5 py-4 flex items-start gap-3">
           <ShieldCheck className="w-4 h-4 text-violet-400 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-violet-400">Auto Backup Strategy</p>
+            <p className="text-sm font-medium text-violet-400">
+              {t("locale") === "th" ? "กลยุทธ์สำรองข้อมูลอัตโนมัติ" : "Auto Backup Strategy"}
+            </p>
             <p className="text-xs text-muted-foreground mt-1">
-              hostpilot automatically creates a backup of your hosts file before every write.
-              You can restore any backup at any time. Backups are stored locally inside the application data folder.
+              {t("locale") === "th"
+                ? "HostPilot จะสร้างไฟล์สำรองของไฟล์ hosts ของระบบของคุณโดยอัตโนมัติก่อนที่จะเขียนบันทึกข้อมูลทุกครั้ง คุณสามารถกู้คืน (Restore) ไฟล์สำรองข้อมูลเมื่อใดก็ได้ ไฟล์สำรองข้อมูลเหล่านี้จะถูกจัดเก็บไว้ในเครื่องของคุณภายในโฟลเดอร์เก็บข้อมูลของโปรแกรม"
+                : "hostpilot automatically creates a backup of your hosts file before every write. You can restore any backup at any time. Backups are stored locally inside the application data folder."}
             </p>
           </div>
         </div>
@@ -98,15 +107,23 @@ export function BackupsPage() {
         <div className="grid grid-cols-3 gap-4">
           <div className="rounded-xl border border-border bg-card p-4 text-center space-y-1">
             <p className="text-2xl font-bold">{backups.length}</p>
-            <p className="text-xs text-muted-foreground">Total backups</p>
+            <p className="text-xs text-muted-foreground">
+              {t("locale") === "th" ? "ไฟล์สำรองทั้งหมด" : "Total backups"}
+            </p>
           </div>
           <div className="rounded-xl border border-border bg-card p-4 text-center space-y-1">
             <p className="text-2xl font-bold">{totalSize.toFixed(1)} KB</p>
-            <p className="text-xs text-muted-foreground">Total size</p>
+            <p className="text-xs text-muted-foreground">
+              {t("locale") === "th" ? "ขนาดรวม" : "Total size"}
+            </p>
           </div>
           <div className="rounded-xl border border-border bg-card p-4 text-center space-y-1">
-            <p className="text-2xl font-bold text-emerald-400">Safe</p>
-            <p className="text-xs text-muted-foreground">Restore status</p>
+            <p className="text-2xl font-bold text-emerald-400">
+              {t("locale") === "th" ? "ปลอดภัย" : "Safe"}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {t("locale") === "th" ? "สถานะความปลอดภัย" : "Restore status"}
+            </p>
           </div>
         </div>
 
@@ -114,11 +131,13 @@ export function BackupsPage() {
         <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
           <div className="px-5 py-3 flex items-center gap-2 border-b border-border bg-muted/20">
             <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="text-xs font-medium text-muted-foreground">Backup History</span>
+            <span className="text-xs font-medium text-muted-foreground">
+              {t("locale") === "th" ? "ประวัติการสำรองข้อมูล" : "Backup History"}
+            </span>
           </div>
           {backups.length === 0 && (
             <div className="px-5 py-10 text-center text-muted-foreground text-sm">
-              No backups yet
+              {t("noData")}
             </div>
           )}
           {backups.map((backup, i) => (
@@ -140,7 +159,9 @@ export function BackupsPage() {
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-medium">{new Date(backup.createdAt).toLocaleString()}</p>
                     {i === 0 && (
-                      <Badge className="bg-violet-500/15 text-violet-400 border-0 text-[10px]">Latest</Badge>
+                      <Badge className="bg-violet-500/15 text-violet-400 border-0 text-[10px]">
+                        {t("locale") === "th" ? "ล่าสุด" : "Latest"}
+                      </Badge>
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">{backup.reason}</p>
@@ -152,16 +173,16 @@ export function BackupsPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-7 text-xs gap-1 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10"
+                    className="h-7 text-xs gap-1 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 cursor-pointer"
                     onClick={() => setRestoreTarget(backup)}
                   >
                     <RotateCcw className="w-3 h-3" />
-                    Restore
+                    {t("restore")}
                   </Button>
                   <Button
                     variant="outline"
                     size="icon"
-                    className="h-7 w-7 text-muted-foreground"
+                    className="h-7 w-7 text-muted-foreground cursor-pointer"
                     onClick={() => handleDownload(backup)}
                   >
                     <Download className="w-3.5 h-3.5" />
@@ -169,7 +190,7 @@ export function BackupsPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                    className="h-7 w-7 text-muted-foreground hover:text-destructive cursor-pointer"
                     onClick={() => setDeleteTarget(backup)}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -191,18 +212,18 @@ export function BackupsPage() {
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(undefined)}>
         <AlertDialogContent className="dark">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete backup?</AlertDialogTitle>
+            <AlertDialogTitle>{t("deleteBackupConfirm")}</AlertDialogTitle>
             <AlertDialogDescription>
-              This backup from {deleteTarget && new Date(deleteTarget.createdAt).toLocaleString()} will be permanently deleted.
+              {t("deleteBackupText")} ({deleteTarget && new Date(deleteTarget.createdAt).toLocaleString()})
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-red-600 hover:bg-red-700 text-white"
             >
-              Delete
+              {t("delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -212,21 +233,20 @@ export function BackupsPage() {
       <AlertDialog open={!!restoreTarget} onOpenChange={(o) => !o && setRestoreTarget(undefined)}>
         <AlertDialogContent className="dark">
           <AlertDialogHeader>
-            <AlertDialogTitle>Restore backup?</AlertDialogTitle>
+            <AlertDialogTitle>{t("restoreBackupConfirm")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to restore the system hosts file to the state from{" "}
-              {restoreTarget && new Date(restoreTarget.createdAt).toLocaleString()}? 
-              {isTauri && " You will be prompted by the system for administrator credentials to apply these changes."}
+              {t("restoreBackupText")} ({restoreTarget && new Date(restoreTarget.createdAt).toLocaleString()})
+              {isTauri && ` (${t("locale") === "th" ? "คุณจะได้รับป๊อปอัปให้ใส่รหัสผ่านผู้ดูแลระบบจากระบบปฏิบัติการของคุณ" : "You will be prompted by the system for administrator credentials to apply these changes."})`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-emerald-600 hover:bg-emerald-700 text-white"
               onClick={handleRestore}
             >
               <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
-              Restore
+              {t("restore")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

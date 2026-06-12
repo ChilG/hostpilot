@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { Topbar } from "@/components/layout/Topbar";
 import { Button } from "@/components/ui/button";
 import { useAppStore, isTauri } from "@/store/AppStore";
+import { useTranslation } from "@/i18n/translations";
 import { invoke } from "@tauri-apps/api/core";
 import {
   Upload,
@@ -34,6 +35,7 @@ const sampleConfigJson = JSON.stringify(
 
 export function ImportExportPage() {
   const { hosts, groups, profiles, ports, addHost, addPort, addGroup } = useAppStore();
+  const { t } = useTranslation();
 
   const [tab, setTab] = useState<Tab>("import");
 
@@ -74,7 +76,7 @@ export function ImportExportPage() {
           defaultName: filename,
         });
         if (savedPath) {
-          toast.success("Configuration exported successfully!", {
+          toast.success(t("exportSuccessToast"), {
             description: `Saved to: ${savedPath}`,
           });
         }
@@ -94,7 +96,7 @@ export function ImportExportPage() {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      toast.success(`${filename} downloaded successfully!`);
+      toast.success(`${filename} ${t("locale") === "th" ? "ดาวน์โหลดเรียบร้อยแล้ว!" : "downloaded successfully!"}`);
     }
   };
 
@@ -112,10 +114,16 @@ export function ImportExportPage() {
         setJsonImportText(text);
         setJsonImportStep("preview");
       } else {
-        toast.error("Invalid config format: no valid hosts, groups, profiles, or ports data found.");
+        toast.error(
+          t("locale") === "th"
+            ? "รูปแบบไฟล์การตั้งค่าไม่ถูกต้อง: ไม่พบข้อมูลโฮสต์ กลุ่ม โปรไฟล์ หรือพอร์ต"
+            : "Invalid config format: no valid hosts, groups, profiles, or ports data found."
+        );
       }
     } catch (err) {
-      toast.error("Failed to parse JSON configuration file.");
+      toast.error(
+        t("locale") === "th" ? "เกิดข้อผิดพลาดในการอ่านไฟล์การตั้งค่า JSON" : "Failed to parse JSON configuration file."
+      );
     }
   };
 
@@ -180,8 +188,10 @@ export function ImportExportPage() {
       }
     });
 
-    toast.success("Configuration successfully imported!", {
-      description: `Added ${hostsImported} hosts, ${groupsImported} groups, and ${portsImported} port rules.`,
+    toast.success(t("importSuccessToast"), {
+      description: t("locale") === "th"
+        ? `เพิ่มโฮสต์ ${hostsImported} รายการ, กลุ่ม ${groupsImported} รายการ, และกฎพอร์ต ${portsImported} รายการ`
+        : `Added ${hostsImported} hosts, ${groupsImported} groups, and ${portsImported} port rules.`,
     });
     setJsonImportStep("done");
   };
@@ -189,8 +199,8 @@ export function ImportExportPage() {
   return (
     <div className="flex flex-col h-full">
       <Topbar
-        title="Import / Export"
-        subtitle="Transfer configurations using hostpilot.config.json"
+        title={t("import-export")}
+        subtitle={t("importExportSubtitle")}
       />
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         {/* Hidden File Inputs */}
@@ -204,20 +214,26 @@ export function ImportExportPage() {
 
         {/* Tab Selection */}
         <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit">
-          {(["import", "export"] as Tab[]).map((t) => (
+          {(["import", "export"] as Tab[]).map((tValue) => (
             <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                tab === t
-                  ? "bg-background text-foreground shadow-sm"
+              key={tValue}
+              onClick={() => setTab(tValue)}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors cursor-pointer ${
+                tab === tValue
+                  ? "bg-background text-foreground shadow-sm font-semibold"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {t === "import" ? (
-                <span className="flex items-center gap-1.5"><Upload className="w-3.5 h-3.5" />Import</span>
+              {tValue === "import" ? (
+                <span className="flex items-center gap-1.5">
+                  <Upload className="w-3.5 h-3.5" />
+                  {t("locale") === "th" ? "นำเข้า" : "Import"}
+                </span>
               ) : (
-                <span className="flex items-center gap-1.5"><Download className="w-3.5 h-3.5" />Export</span>
+                <span className="flex items-center gap-1.5">
+                  <Download className="w-3.5 h-3.5" />
+                  {t("locale") === "th" ? "ส่งออก" : "Export"}
+                </span>
               )}
             </button>
           ))}
@@ -234,7 +250,9 @@ export function ImportExportPage() {
                 <div>
                   <p className="font-semibold text-sm">hostpilot.config.json</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Full configuration containing hosts, groups, profiles, and ports
+                    {t("locale") === "th"
+                      ? "การตั้งค่าแบบเต็มรูปแบบประกอบด้วยรายการโฮสต์ กลุ่ม โปรไฟล์ และกฎพอร์ต"
+                      : "Full configuration containing hosts, groups, profiles, and ports"}
                   </p>
                 </div>
               </div>
@@ -242,12 +260,16 @@ export function ImportExportPage() {
               {jsonImportStep === "idle" && (
                 <div className="space-y-3">
                   <button
-                    className="w-full rounded-lg border-2 border-dashed border-border p-8 flex flex-col items-center justify-center gap-3 text-muted-foreground hover:border-violet-500/50 hover:bg-violet-500/5 hover:text-foreground transition-all"
+                    className="w-full rounded-lg border-2 border-dashed border-border p-8 flex flex-col items-center justify-center gap-3 text-muted-foreground hover:border-violet-500/50 hover:bg-violet-500/5 hover:text-foreground transition-all cursor-pointer"
                     onClick={() => jsonFileRef.current?.click()}
                   >
                     <Upload className="w-8 h-8 text-violet-400" />
-                    <p className="text-sm font-medium">Click to upload config file</p>
-                    <p className="text-xs">Supports only hostpilot.config.json format</p>
+                    <p className="text-sm font-medium">
+                      {t("locale") === "th" ? "คลิกเพื่อเลือกไฟล์อัปโหลด" : "Click to upload config file"}
+                    </p>
+                    <p className="text-xs">
+                      {t("locale") === "th" ? "รองรับโครงสร้างแบบ hostpilot.config.json เท่านั้น" : "Supports only hostpilot.config.json format"}
+                    </p>
                   </button>
                 </div>
               )}
@@ -255,28 +277,30 @@ export function ImportExportPage() {
               {jsonImportStep === "preview" && (
                 <div className="space-y-3">
                   <div className="rounded-lg bg-muted/40 p-3 max-h-56 overflow-y-auto">
-                    <p className="text-[10px] font-mono text-muted-foreground/60 mb-2">config.json — preview</p>
+                    <p className="text-[10px] font-mono text-muted-foreground/60 mb-2">
+                      {t("previewImport")}
+                    </p>
                     <pre className="text-xs font-mono text-violet-400 leading-5">{jsonImportText}</pre>
                   </div>
                   <div className="flex items-center gap-1.5 text-xs text-violet-400 bg-violet-500/10 rounded-md px-3 py-2">
                     <CheckCircle2 className="w-3.5 h-3.5" />
-                    Valid config file detected. Ready to merge.
+                    {t("locale") === "th" ? "ตรวจพบไฟล์การตั้งค่าที่ถูกต้อง พร้อมนำเข้าผสานข้อมูล" : "Valid config file detected. Ready to merge."}
                   </div>
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1 h-8 text-xs"
+                      className="flex-1 h-8 text-xs cursor-pointer"
                       onClick={() => setJsonImportStep("idle")}
                     >
-                      Cancel
+                      {t("cancel")}
                     </Button>
                     <Button
                       size="sm"
-                      className="flex-1 h-8 text-xs bg-violet-600 hover:bg-violet-700 text-white gap-1.5"
+                      className="flex-1 h-8 text-xs bg-violet-600 hover:bg-violet-700 text-white gap-1.5 cursor-pointer"
                       onClick={triggerJsonImport}
                     >
-                      Import Config
+                      {t("locale") === "th" ? "นำเข้าข้อมูลการตั้งค่า" : "Import Config"}
                       <ArrowRight className="w-3 h-3" />
                     </Button>
                   </div>
@@ -287,15 +311,15 @@ export function ImportExportPage() {
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 text-sm text-emerald-400 bg-emerald-500/10 rounded-lg px-4 py-3">
                     <CheckCircle2 className="w-4 h-4" />
-                    Config successfully merged into your workspace!
+                    {t("locale") === "th" ? "ผสานไฟล์ข้อมูลการตั้งค่าเข้าสู่พื้นที่ทำงานแล้ว!" : "Config successfully merged into your workspace!"}
                   </div>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="w-full h-8 text-xs"
+                    className="w-full h-8 text-xs cursor-pointer"
                     onClick={() => setJsonImportStep("idle")}
                   >
-                    Import Another
+                    {t("locale") === "th" ? "นำเข้าไฟล์เพิ่มเติม" : "Import Another"}
                   </Button>
                 </div>
               )}
@@ -303,12 +327,26 @@ export function ImportExportPage() {
 
             {/* Import Behavior Options */}
             <div className="rounded-xl border border-border bg-card p-5">
-              <p className="text-sm font-medium mb-3">Import Behavior Options</p>
+              <p className="text-sm font-medium mb-3">
+                {t("locale") === "th" ? "ตัวเลือกการนำเข้าข้อมูล" : "Import Behavior Options"}
+              </p>
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  { label: "Merge", desc: "Add new entries, keep existing ones", active: true },
-                  { label: "Replace Profile", desc: "Replace only managed block entries", active: false },
-                  { label: "Full Replace", desc: "Replace all hostpilot-managed entries", active: false },
+                  {
+                    label: t("locale") === "th" ? "ผสานข้อมูล" : "Merge",
+                    desc: t("locale") === "th" ? "เพิ่มรายการใหม่ โดยคงรักษาข้อมูลเดิมไว้" : "Add new entries, keep existing ones",
+                    active: true,
+                  },
+                  {
+                    label: t("locale") === "th" ? "เขียนทับโปรไฟล์" : "Replace Profile",
+                    desc: t("locale") === "th" ? "เขียนทับเฉพาะข้อมูลบล็อกที่โปรแกรมคอยดูแลอยู่" : "Replace only managed block entries",
+                    active: false,
+                  },
+                  {
+                    label: t("locale") === "th" ? "เขียนทับข้อมูลทั้งหมด" : "Full Replace",
+                    desc: t("locale") === "th" ? "เขียนทับไฟล์โฮสต์และประวัติทั้งหมดด้วยไฟล์นี้" : "Replace all hostpilot-managed entries",
+                    active: false,
+                  },
                 ].map((opt) => (
                   <button
                     key={opt.label}
@@ -339,8 +377,8 @@ export function ImportExportPage() {
                   <FileJson className="w-4.5 h-4.5 text-violet-400" />
                 </div>
                 <div>
-                  <p className="font-semibold text-sm">Export hostpilot.config.json</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Full config with all settings</p>
+                  <p className="font-semibold text-sm">{t("exportConfig")}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{t("exportConfigDesc")}</p>
                 </div>
               </div>
               <div className="rounded-lg bg-muted/40 p-3 max-h-56 overflow-y-auto">
@@ -348,34 +386,46 @@ export function ImportExportPage() {
               </div>
               <Button
                 size="sm"
-                className="w-full h-8 text-xs gap-1.5 bg-violet-600 hover:bg-violet-700 text-white"
+                className="w-full h-8 text-xs gap-1.5 bg-violet-600 hover:bg-violet-700 text-white cursor-pointer"
                 onClick={() => handleDownload("hostpilot.config.json", getJsonString())}
               >
                 <Download className="w-3.5 h-3.5" />
-                Download config.json
+                {t("locale") === "th" ? "ดาวน์โหลดไฟล์ config.json" : "Download config.json"}
               </Button>
             </div>
 
             {/* Export scope selector */}
             <div className="rounded-xl border border-border bg-card p-5">
-              <p className="text-sm font-medium mb-3">Export Scope</p>
+              <p className="text-sm font-medium mb-3">
+                {t("locale") === "th" ? "ขอบเขตการส่งออกข้อมูล" : "Export Scope"}
+              </p>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { id: "active", label: "Active Profile", count: exportScope === "active" ? exportHosts.length : activeHostIds.length },
-                  { id: "all", label: "All Hosts", count: exportScope === "all" ? exportHosts.length : hosts.length },
+                  {
+                    id: "active",
+                    label: t("activeProfile"),
+                    count: exportScope === "active" ? exportHosts.length : activeHostIds.length,
+                  },
+                  {
+                    id: "all",
+                    label: t("locale") === "th" ? "รายการโฮสต์ทั้งหมดในระบบ" : "All Hosts",
+                    count: exportScope === "all" ? exportHosts.length : hosts.length,
+                  },
                 ].map((scope) => (
                   <button
                     key={scope.id}
                     onClick={() => setExportScope(scope.id as "active" | "all")}
-                    className={`rounded-lg border p-3 text-left transition-colors ${
-                      exportScope === scope.id ? "border-indigo-500/40 bg-indigo-500/10" : "border-border hover:border-border/60"
+                    className={`rounded-lg border p-3 text-left transition-colors cursor-pointer ${
+                      exportScope === scope.id ? "border-indigo-500/40 bg-indigo-500/10 font-medium" : "border-border hover:border-border/60"
                     }`}
                   >
                     <div className="flex items-center gap-1.5 mb-1">
                       {exportScope === scope.id && <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" />}
                       <p className="text-xs font-semibold">{scope.label}</p>
                     </div>
-                    <p className="text-[10px] text-muted-foreground">{scope.count} entries</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {scope.count} {t("locale") === "th" ? "รายการ" : "entries"}
+                    </p>
                   </button>
                 ))}
               </div>

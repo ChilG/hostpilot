@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAppStore, type HostProfile } from "@/store/AppStore";
+import { useTranslation } from "@/i18n/translations";
 
 type Props = {
   open: boolean;
@@ -23,6 +24,7 @@ const DEFAULT_FORM = { name: "", description: "", entryIds: [] as string[] };
 
 export function ProfileFormDialog({ open, onOpenChange, mode, profile, onSave }: Props) {
   const { hosts, addProfile, updateProfile } = useAppStore();
+  const { t } = useTranslation();
   const [form, setForm] = useState(DEFAULT_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -47,8 +49,13 @@ export function ProfileFormDialog({ open, onOpenChange, mode, profile, onSave }:
 
   const handleSave = () => {
     const e: Record<string, string> = {};
-    if (!form.name.trim()) e.name = "Name is required";
-    if (Object.keys(e).length) { setErrors(e); return; }
+    if (!form.name.trim()) {
+      e.name = t("locale") === "th" ? "กรุณาระบุชื่อโปรไฟล์" : "Name is required";
+    }
+    if (Object.keys(e).length) {
+      setErrors(e);
+      return;
+    }
 
     const payload = {
       name: form.name.trim(),
@@ -71,15 +78,15 @@ export function ProfileFormDialog({ open, onOpenChange, mode, profile, onSave }:
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md dark">
         <DialogHeader>
-          <DialogTitle>{mode === "create" ? "New Profile" : "Edit Profile"}</DialogTitle>
+          <DialogTitle>{mode === "create" ? t("addProfile") : t("editProfile")}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
           <div className="space-y-1.5">
-            <Label htmlFor="prof-name">Name *</Label>
+            <Label htmlFor="prof-name">{t("profileName")} *</Label>
             <Input
               id="prof-name"
-              placeholder="e.g. Local Dev"
+              placeholder={t("profileNamePlaceholder")}
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               className={errors.name ? "border-red-500" : ""}
@@ -88,20 +95,24 @@ export function ProfileFormDialog({ open, onOpenChange, mode, profile, onSave }:
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="prof-desc">Description</Label>
+            <Label htmlFor="prof-desc">{t("description")}</Label>
             <Input
               id="prof-desc"
-              placeholder="Optional description"
+              placeholder={t("descPlaceholder")}
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
             />
           </div>
 
           <div className="space-y-2">
-            <Label>Host Entries ({form.entryIds.length} selected)</Label>
-            <div className="max-h-52 overflow-y-auto space-y-1 rounded-lg border border-border p-2">
+            <Label>
+              {t("selectHosts")} ({form.entryIds.length} {t("locale") === "th" ? "ที่เลือกอยู่" : "selected"})
+            </Label>
+            <div className="max-h-52 overflow-y-auto space-y-1 rounded-lg border border-border p-2 bg-muted/20">
               {hosts.length === 0 && (
-                <p className="text-xs text-muted-foreground text-center py-4">No hosts yet. Add some on the Hosts page.</p>
+                <p className="text-xs text-muted-foreground text-center py-4">
+                  {t("locale") === "th" ? "ยังไม่มีรายการโฮสต์ในระบบ กรุณาเพิ่มที่หน้าโฮสต์" : "No hosts yet. Add some on the Hosts page."}
+                </p>
               )}
               {hosts.map((h) => {
                 const selected = form.entryIds.includes(h.id);
@@ -110,9 +121,9 @@ export function ProfileFormDialog({ open, onOpenChange, mode, profile, onSave }:
                     key={h.id}
                     type="button"
                     onClick={() => toggleEntry(h.id)}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors ${
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors cursor-pointer ${
                       selected
-                        ? "bg-indigo-500/15 text-indigo-300"
+                        ? "bg-indigo-500/15 text-indigo-300 font-medium"
                         : "hover:bg-accent/40 text-muted-foreground"
                     }`}
                   >
@@ -134,9 +145,14 @@ export function ProfileFormDialog({ open, onOpenChange, mode, profile, onSave }:
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button className="bg-indigo-600 hover:bg-indigo-700 text-white" onClick={handleSave}>
-            {mode === "create" ? "Create Profile" : "Save Changes"}
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {t("cancel")}
+          </Button>
+          <Button
+            className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            onClick={handleSave}
+          >
+            {mode === "create" ? t("add") : t("save")}
           </Button>
         </DialogFooter>
       </DialogContent>

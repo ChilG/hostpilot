@@ -116,3 +116,23 @@ To transition from the React-only mockup to a fully functional desktop applicati
 - [x] **Frontend AppStore Integration**: Connect project activation/deactivation to write/remove the parsed `hosts.local` entries in the system hosts file.
 - [x] **Projects Page UI Enhancements**: Load and preview actual `hosts.local` file contents dynamically, parse entry counts, and handle missing/error file states.
 
+### 6. Settings Page & Preferences Persistence
+- [ ] **Tauri Command: `get_default_hosts_path`**: Retrieve the default OS hosts path on initialization (e.g. `C:\Windows\System32\drivers\etc\hosts` for Windows, `/etc/hosts` for macOS/Linux).
+- [ ] **Tauri Command: `select_backup_directory`**: Trigger directory folder dialog selection in Rust using `tauri-plugin-dialog` when clicking "Browse" in settings.
+- [ ] **Settings Integration in `AppStore`**:
+  - Add user preferences (e.g., auto-backup, validation, diff-preview, backup retention count, auto-cleanup, language) to the global app config.
+  - Persist settings updates to disk under the `"settings"` key in `config.json` via `save_app_config`.
+- [ ] **Theme Switching Event Integration**: Bind the theme preferences ("Dark", "Light", "System") to the frontend HTML document class list and configure the Tauri window theme listeners.
+
+### 7. Multi-language (i18n) Integration (EN / TH)
+- [ ] **Tauri Command: `get_system_locale`**: Query the user's host system language at startup (using a Rust crate like `sys-locale`) to automatically set English or Thai.
+- [ ] **Translation Dictionaries**:
+  - Create dictionary mappings for `en` and `th` locale keys (covering sidebar items, table headers, forms, confirmation dialogs, toast feedback, and validation errors).
+- [ ] **Integration Approach**:
+  - Evaluate using standard `i18next` + `react-i18next` library configurations vs. implementing a custom, lightweight translation hook directly in `AppStore.tsx` for low-overhead localization.
+- [ ] **Language Switcher UI**:
+  - Render a language selection dropdown inside `SettingsPage.tsx` allowing toggle switches between English and Thai.
+  - Persist chosen language choice to `config.json`.
+
+
+

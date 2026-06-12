@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAppStore, type HostGroup } from "@/store/AppStore";
+import { useTranslation } from "@/i18n/translations";
 
 type Props = {
   open: boolean;
@@ -29,6 +30,7 @@ const DEFAULT_FORM = { name: "", description: "", color: PRESET_COLORS[0] };
 
 export function GroupFormDialog({ open, onOpenChange, mode, group, onSave }: Props) {
   const { addGroup, updateGroup } = useAppStore();
+  const { t } = useTranslation();
   const [form, setForm] = useState(DEFAULT_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -45,8 +47,13 @@ export function GroupFormDialog({ open, onOpenChange, mode, group, onSave }: Pro
 
   const handleSave = () => {
     const e: Record<string, string> = {};
-    if (!form.name.trim()) e.name = "Name is required";
-    if (Object.keys(e).length) { setErrors(e); return; }
+    if (!form.name.trim()) {
+      e.name = t("locale") === "th" ? "กรุณากรอกชื่อกลุ่ม" : "Name is required";
+    }
+    if (Object.keys(e).length) {
+      setErrors(e);
+      return;
+    }
 
     if (mode === "create") {
       addGroup({ name: form.name.trim(), description: form.description.trim() || undefined, color: form.color });
@@ -61,15 +68,15 @@ export function GroupFormDialog({ open, onOpenChange, mode, group, onSave }: Pro
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-sm dark">
         <DialogHeader>
-          <DialogTitle>{mode === "create" ? "New Group" : "Edit Group"}</DialogTitle>
+          <DialogTitle>{mode === "create" ? t("addGroup") : t("editGroup")}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
           <div className="space-y-1.5">
-            <Label htmlFor="group-name">Name *</Label>
+            <Label htmlFor="group-name">{t("groupName")} *</Label>
             <Input
               id="group-name"
-              placeholder="e.g. Frontend"
+              placeholder={t("namePlaceholder")}
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               className={errors.name ? "border-red-500" : ""}
@@ -78,24 +85,24 @@ export function GroupFormDialog({ open, onOpenChange, mode, group, onSave }: Pro
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="group-desc">Description</Label>
+            <Label htmlFor="group-desc">{t("description")}</Label>
             <Input
               id="group-desc"
-              placeholder="Optional description"
+              placeholder={t("descPlaceholder")}
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
             />
           </div>
 
           <div className="space-y-2">
-            <Label>Color</Label>
+            <Label>{t("groupColor")}</Label>
             <div className="flex flex-wrap gap-2">
               {PRESET_COLORS.map((c) => (
                 <button
                   key={c}
                   type="button"
                   onClick={() => setForm((f) => ({ ...f, color: c }))}
-                  className="w-7 h-7 rounded-full border-2 transition-transform hover:scale-110"
+                  className="w-7 h-7 rounded-full border-2 transition-transform hover:scale-110 cursor-pointer"
                   style={{
                     backgroundColor: c,
                     borderColor: form.color === c ? "white" : "transparent",
@@ -115,9 +122,14 @@ export function GroupFormDialog({ open, onOpenChange, mode, group, onSave }: Pro
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button className="bg-indigo-600 hover:bg-indigo-700 text-white" onClick={handleSave}>
-            {mode === "create" ? "Create Group" : "Save Changes"}
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {t("cancel")}
+          </Button>
+          <Button
+            className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            onClick={handleSave}
+          >
+            {mode === "create" ? t("add") : t("save")}
           </Button>
         </DialogFooter>
       </DialogContent>

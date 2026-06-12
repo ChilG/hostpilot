@@ -21,6 +21,16 @@ pub fn get_hosts_path() -> &'static str {
 /// Helper to get the backups directory path inside app data dir
 pub fn get_backups_dir(app_handle: &tauri::AppHandle) -> Result<PathBuf, String> {
     use tauri::Manager;
+    
+    // Check if custom backup directory is set in app settings
+    if let Ok(config) = crate::config::load_config(app_handle) {
+        if let Some(settings) = config.settings {
+            if !settings.backup_directory.trim().is_empty() {
+                return Ok(PathBuf::from(settings.backup_directory));
+            }
+        }
+    }
+    
     let app_dir = app_handle
         .path()
         .app_data_dir()
@@ -263,6 +273,25 @@ pub fn restore_backup(
     let dest_hosts = Path::new(get_hosts_path());
     copy_file_elevated(&backup_path, dest_hosts)
 }
+
+/// Deletes a backup file physically from the filesystem
+pub fn delete_backup_file(
+    app_handle: &tauri::AppHandle,
+    backup_id: &str,
+) -> Result<(), String> {
+    let backup_dir = get_backups_dir(app_handle)?;
+    let timestamp = backup_id.strip_prefix("b_")
+        .ok_or_else(|| format!("Invalid backup ID: {}", backup_id))?;
+    let backup_filename = format!("hosts-{}.bak", timestamp);
+    let backup_path = backup_dir.join(&backup_filename);
+    
+    if backup_path.exists() {
+        fs::remove_file(&backup_path)
+            .map_err(|e| format!("Failed to delete backup file physically: {}", e))?;
+    }
+    Ok(())
+}
+
 
 pub mod tests {
     #[test]

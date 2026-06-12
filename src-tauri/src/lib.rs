@@ -64,6 +64,15 @@ fn restore_backup(
 }
 
 #[tauri::command]
+fn delete_backup_file(
+    app_handle: tauri::AppHandle,
+    backup_id: String,
+) -> Result<(), String> {
+    hosts::delete_backup_file(&app_handle, &backup_id)
+}
+
+
+#[tauri::command]
 fn load_app_config(app_handle: tauri::AppHandle) -> Result<AppConfig, String> {
     config::load_config(&app_handle)
 }
@@ -130,6 +139,19 @@ fn get_default_hosts_path() -> String {
     hosts::get_hosts_path().to_string()
 }
 
+#[tauri::command]
+fn select_backup_directory() -> Result<Option<String>, String> {
+    let folder = rfd::FileDialog::new()
+        .set_title("Select Backup Directory")
+        .pick_folder();
+    Ok(folder.map(|path| path.to_string_lossy().to_string()))
+}
+
+#[tauri::command]
+fn get_system_locale() -> String {
+    sys_locale::get_locale().unwrap_or_else(|| "en".to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -142,6 +164,7 @@ pub fn run() {
             remove_hosts_block,
             backup_hosts_file,
             restore_backup,
+            delete_backup_file,
             load_app_config,
             save_app_config,
             check_port,
@@ -149,6 +172,8 @@ pub fn run() {
             reveal_in_finder,
             open_in_browser,
             get_default_hosts_path,
+            select_backup_directory,
+            get_system_locale,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

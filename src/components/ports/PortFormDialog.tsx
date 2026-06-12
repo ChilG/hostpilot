@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAppStore, type PortRule } from "@/store/AppStore";
+import { useTranslation } from "@/i18n/translations";
 
 type Props = {
   open: boolean;
@@ -37,6 +38,7 @@ const DEFAULT_FORM = {
 
 export function PortFormDialog({ open, onOpenChange, mode, rule, onSave }: Props) {
   const { hosts, addPort, updatePort } = useAppStore();
+  const { t } = useTranslation();
   const [form, setForm] = useState(DEFAULT_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -60,11 +62,19 @@ export function PortFormDialog({ open, onOpenChange, mode, rule, onSave }: Props
 
   const handleSave = () => {
     const e: Record<string, string> = {};
-    if (!form.domain.trim()) e.domain = "Domain is required";
-    if (!form.port) e.port = "Port is required";
-    else if (isNaN(Number(form.port)) || Number(form.port) < 1 || Number(form.port) > 65535)
-      e.port = "Port must be 1–65535";
-    if (Object.keys(e).length) { setErrors(e); return; }
+    if (!form.domain.trim()) {
+      e.domain = t("locale") === "th" ? "กรุณากรอกชื่อโดเมน" : "Domain is required";
+    }
+    if (!form.port) {
+      e.port = t("locale") === "th" ? "กรุณากรอกหมายเลขพอร์ต" : "Port is required";
+    } else if (isNaN(Number(form.port)) || Number(form.port) < 1 || Number(form.port) > 65535) {
+      e.port = t("locale") === "th" ? "หมายเลขพอร์ตต้องเป็นตัวเลข 1–65535" : "Port must be 1–65535";
+    }
+    
+    if (Object.keys(e).length) {
+      setErrors(e);
+      return;
+    }
 
     const payload = {
       domain: form.domain.trim(),
@@ -90,30 +100,30 @@ export function PortFormDialog({ open, onOpenChange, mode, rule, onSave }: Props
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-sm dark">
         <DialogHeader>
-          <DialogTitle>{mode === "create" ? "Add Port Rule" : "Edit Port Rule"}</DialogTitle>
+          <DialogTitle>{mode === "create" ? t("addPort") : t("editPort")}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
           <div className="space-y-1.5">
-            <Label htmlFor="port-domain">Domain *</Label>
+            <Label htmlFor="port-domain">{t("domain")} *</Label>
             <Select
               value={form.domain || "custom"}
               onValueChange={(v) => setForm((f) => ({ ...f, domain: v === "custom" ? "" : v }))}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select domain" />
+                <SelectValue placeholder={t("locale") === "th" ? "เลือกโดเมน" : "Select domain"} />
               </SelectTrigger>
               <SelectContent>
                 {hostDomains.map((d) => (
                   <SelectItem key={d} value={d}>{d}</SelectItem>
                 ))}
-                <SelectItem value="custom">Custom…</SelectItem>
+                <SelectItem value="custom">{t("locale") === "th" ? "กำหนดเอง..." : "Custom..."}</SelectItem>
               </SelectContent>
             </Select>
             {(!hostDomains.includes(form.domain) || form.domain === "") && (
               <Input
                 id="port-domain"
-                placeholder="e.g. web.local"
+                placeholder={t("domainPlaceholder")}
                 value={form.domain}
                 onChange={(e) => setForm((f) => ({ ...f, domain: e.target.value }))}
                 className={errors.domain ? "border-red-500" : ""}
@@ -124,7 +134,7 @@ export function PortFormDialog({ open, onOpenChange, mode, rule, onSave }: Props
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="port-protocol">Protocol</Label>
+              <Label htmlFor="port-protocol">{t("protocol")}</Label>
               <Select
                 value={form.protocol}
                 onValueChange={(v) => setForm((f) => ({ ...f, protocol: v as PortRule["protocol"] }))}
@@ -140,11 +150,11 @@ export function PortFormDialog({ open, onOpenChange, mode, rule, onSave }: Props
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="port-num">Port *</Label>
+              <Label htmlFor="port-num">{t("portNumber")} *</Label>
               <Input
                 id="port-num"
                 type="number"
-                placeholder="3000"
+                placeholder={t("portPlaceholder")}
                 value={form.port}
                 onChange={(e) => setForm((f) => ({ ...f, port: e.target.value }))}
                 className={errors.port ? "border-red-500" : ""}
@@ -154,10 +164,10 @@ export function PortFormDialog({ open, onOpenChange, mode, rule, onSave }: Props
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="port-target">Target Host</Label>
+            <Label htmlFor="port-target">{t("targetHost")}</Label>
             <Input
               id="port-target"
-              placeholder="127.0.0.1"
+              placeholder={t("targetHostPlaceholder")}
               value={form.targetHost}
               onChange={(e) => setForm((f) => ({ ...f, targetHost: e.target.value }))}
             />
@@ -165,9 +175,14 @@ export function PortFormDialog({ open, onOpenChange, mode, rule, onSave }: Props
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button className="bg-indigo-600 hover:bg-indigo-700 text-white" onClick={handleSave}>
-            {mode === "create" ? "Add Rule" : "Save Changes"}
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {t("cancel")}
+          </Button>
+          <Button
+            className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            onClick={handleSave}
+          >
+            {mode === "create" ? t("add") : t("save")}
           </Button>
         </DialogFooter>
       </DialogContent>

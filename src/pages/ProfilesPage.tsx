@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useAppStore, type HostProfile } from "@/store/AppStore";
 import { ProfileFormDialog } from "@/components/profiles/ProfileFormDialog";
+import { useTranslation } from "@/i18n/translations";
 import {
   Plus,
   Zap,
@@ -48,6 +49,7 @@ function exportProfile(profile: HostProfile, hosts: ReturnType<typeof useAppStor
 
 export function ProfilesPage() {
   const { profiles, hosts, updateProfile, deleteProfile, duplicateProfile, activateProfile } = useAppStore();
+  const { t } = useTranslation();
 
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
@@ -69,15 +71,19 @@ export function ProfilesPage() {
   const handleDelete = () => {
     if (!deleteTarget) return;
     deleteProfile(deleteTarget.id);
-    toast.success(`Profile "${deleteTarget.name}" deleted`);
+    toast.success(
+      t("locale") === "th"
+        ? `ลบโปรไฟล์ "${deleteTarget.name}" เรียบร้อยแล้ว`
+        : `Profile "${deleteTarget.name}" deleted`
+    );
     setDeleteTarget(undefined);
   };
 
   return (
     <div className="flex flex-col h-full">
       <Topbar
-        title="Profiles"
-        subtitle="Save and switch between environment configurations"
+        title={t("profiles")}
+        subtitle={t("profilesSubtitle")}
         actions={
           <Button
             size="sm"
@@ -85,7 +91,7 @@ export function ProfilesPage() {
             onClick={openCreate}
           >
             <Plus className="w-3.5 h-3.5" />
-            New Profile
+            {t("addProfile")}
           </Button>
         }
       />
@@ -103,7 +109,7 @@ export function ProfilesPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <p className="font-semibold text-sm">{profile.name}</p>
-                  <Badge className="bg-emerald-500/15 text-emerald-400 border-0 text-[10px]">Active</Badge>
+                  <Badge className="bg-emerald-500/15 text-emerald-400 border-0 text-[10px]">{t("active")}</Badge>
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">{profile.description}</p>
               </div>
@@ -111,7 +117,9 @@ export function ProfilesPage() {
             <div className="flex items-center gap-4 text-right">
               <div>
                 <p className="text-lg font-bold">{profile.entryIds.length}</p>
-                <p className="text-[10px] text-muted-foreground">hosts enabled</p>
+                <p className="text-[10px] text-muted-foreground">
+                  {t("locale") === "th" ? "โฮสต์เปิดใช้งานอยู่" : "hosts enabled"}
+                </p>
               </div>
               <Button
                 variant="outline"
@@ -119,10 +127,12 @@ export function ProfilesPage() {
                 className="h-8 text-xs gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10"
                 onClick={() => {
                   updateProfile(profile.id, { active: false });
-                  toast.success("Profile deactivated");
+                  toast.success(
+                    t("locale") === "th" ? "ปิดการทำงานโปรไฟล์สำเร็จ" : "Profile deactivated"
+                  );
                 }}
               >
-                Deactivate
+                {t("locale") === "th" ? "ปิดใช้งาน" : "Deactivate"}
               </Button>
             </div>
           </div>
@@ -154,7 +164,7 @@ export function ProfilesPage() {
                         onClick={() => {
                           updateProfile(profile.id, { favorite: !profile.favorite });
                         }}
-                        className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-amber-400 transition-colors"
+                        className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-amber-400 transition-colors cursor-pointer"
                       >
                         {profile.favorite ? (
                           <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
@@ -162,14 +172,14 @@ export function ProfilesPage() {
                           <StarOff className="w-3.5 h-3.5" />
                         )}
                       </button>
-                      <button className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100">
+                      <button className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100 cursor-pointer">
                         <MoreHorizontal className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
 
                   {/* Hosts preview */}
-                  <div className="h-[148px] flex flex-col justify-between">
+                  <div className="h-37 flex flex-col justify-between">
                     <div className="space-y-1">
                       {entries.slice(0, 4).map((h) => (
                         <div
@@ -183,12 +193,12 @@ export function ProfilesPage() {
                     </div>
                     {entries.length > 4 && (
                       <p className="text-[10px] text-muted-foreground text-center pt-2">
-                        + {entries.length - 4} more hosts
+                        {t("locale") === "th" ? `+ อีก ${entries.length - 4} โฮสต์` : `+ ${entries.length - 4} more hosts`}
                       </p>
                     )}
                     {entries.length === 0 && (
                       <div className="flex-1 flex items-center justify-center">
-                        <p className="text-[10px] text-muted-foreground text-center">No hosts in this profile</p>
+                        <p className="text-[10px] text-muted-foreground text-center">{t("noHostsSelected")}</p>
                       </div>
                     )}
                   </div>
@@ -199,20 +209,24 @@ export function ProfilesPage() {
                       className="flex-1 h-8 text-xs bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5"
                       onClick={() => {
                         activateProfile(profile.id);
-                        toast.success(`Profile "${profile.name}" activated`);
+                        toast.success(
+                          t("locale") === "th" ? `เปิดใช้งานโปรไฟล์ "${profile.name}"` : `Profile "${profile.name}" activated`
+                        );
                       }}
                     >
                       <Zap className="w-3 h-3" />
-                      Activate
+                      {t("locale") === "th" ? "ใช้งาน" : "Activate"}
                     </Button>
                     <Button
                       variant="outline"
                       size="icon"
                       className="h-8 w-8"
-                      title="Duplicate"
+                      title={t("duplicateProfile")}
                       onClick={() => {
                         duplicateProfile(profile.id);
-                        toast.success(`Profile duplicated as "Copy of ${profile.name}"`);
+                        toast.success(
+                          t("locale") === "th" ? `ทำสำเนาโปรไฟล์เป็น "Copy of ${profile.name}"` : `Profile duplicated as "Copy of ${profile.name}"`
+                        );
                       }}
                     >
                       <Copy className="w-3.5 h-3.5" />
@@ -224,7 +238,9 @@ export function ProfilesPage() {
                       title="Export JSON"
                       onClick={() => {
                         exportProfile(profile, hosts);
-                        toast.success("Profile exported");
+                        toast.success(
+                          t("locale") === "th" ? "ส่งออกโปรไฟล์เรียบร้อยแล้ว" : "Profile exported"
+                        );
                       }}
                     >
                       <Download className="w-3.5 h-3.5" />
@@ -233,7 +249,7 @@ export function ProfilesPage() {
                       variant="outline"
                       size="icon"
                       className="h-8 w-8"
-                      title="Edit"
+                      title={t("edit")}
                       onClick={() => openEdit(profile)}
                     >
                       <Pencil className="w-3.5 h-3.5" />
@@ -242,7 +258,7 @@ export function ProfilesPage() {
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                      title="Delete"
+                      title={t("delete")}
                       onClick={() => setDeleteTarget(profile)}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -255,12 +271,12 @@ export function ProfilesPage() {
           {/* Add new profile */}
           <button
             onClick={openCreate}
-            className="rounded-xl border border-dashed border-border bg-transparent p-5 flex flex-col items-center justify-center gap-3 text-muted-foreground hover:text-foreground hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all min-h-[200px]"
+            className="rounded-xl border border-dashed border-border bg-transparent p-5 flex flex-col items-center justify-center gap-3 text-muted-foreground hover:text-foreground hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all min-h-[200px] cursor-pointer"
           >
             <div className="w-10 h-10 rounded-full border-2 border-dashed border-current flex items-center justify-center">
               <Plus className="w-5 h-5" />
             </div>
-            <p className="text-sm font-medium">New Profile</p>
+            <p className="text-sm font-medium">{t("addProfile")}</p>
           </button>
         </div>
       </div>
@@ -278,18 +294,18 @@ export function ProfilesPage() {
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(undefined)}>
         <AlertDialogContent className="dark">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete profile?</AlertDialogTitle>
+            <AlertDialogTitle>{t("deleteProfileConfirm")}</AlertDialogTitle>
             <AlertDialogDescription>
-              "{deleteTarget?.name}" will be permanently deleted. This action cannot be undone.
+              {t("deleteProfileText")} (<code className="font-mono">{deleteTarget?.name}</code>)
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               onClick={handleDelete}
             >
-              Delete
+              {t("delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
