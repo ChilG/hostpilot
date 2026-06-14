@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { useAppStore, type PortRule } from "@/store/AppStore";
 import { useTranslation } from "@/i18n/translations";
+import { getPortSchema } from "@/lib/schemas";
 
 type Props = {
   open: boolean;
@@ -60,17 +61,29 @@ export function PortFormDialog({ open, onOpenChange, mode, rule, onSave }: Props
     }
   }, [open, mode, rule]);
 
+  const validate = () => {
+    const schema = getPortSchema(t);
+    const result = schema.safeParse({
+      domain: form.domain.trim(),
+      targetHost: form.targetHost.trim(),
+      port: form.port,
+      protocol: form.protocol,
+    });
+
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.issues.forEach((err) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0].toString()] = err.message;
+        }
+      });
+      return fieldErrors;
+    }
+    return {};
+  };
+
   const handleSave = () => {
-    const e: Record<string, string> = {};
-    if (!form.domain.trim()) {
-      e.domain = t("locale") === "th" ? "กรุณากรอกชื่อโดเมน" : "Domain is required";
-    }
-    if (!form.port) {
-      e.port = t("locale") === "th" ? "กรุณากรอกหมายเลขพอร์ต" : "Port is required";
-    } else if (isNaN(Number(form.port)) || Number(form.port) < 1 || Number(form.port) > 65535) {
-      e.port = t("locale") === "th" ? "หมายเลขพอร์ตต้องเป็นตัวเลข 1–65535" : "Port must be 1–65535";
-    }
-    
+    const e = validate();
     if (Object.keys(e).length) {
       setErrors(e);
       return;
@@ -111,13 +124,13 @@ export function PortFormDialog({ open, onOpenChange, mode, rule, onSave }: Props
               onValueChange={(v) => setForm((f) => ({ ...f, domain: v === "custom" ? "" : v }))}
             >
               <SelectTrigger>
-                <SelectValue placeholder={t("locale") === "th" ? "เลือกโดเมน" : "Select domain"} />
+                <SelectValue placeholder={t("selectDomain")} />
               </SelectTrigger>
               <SelectContent>
                 {hostDomains.map((d) => (
                   <SelectItem key={d} value={d}>{d}</SelectItem>
                 ))}
-                <SelectItem value="custom">{t("locale") === "th" ? "กำหนดเอง..." : "Custom..."}</SelectItem>
+                <SelectItem value="custom">{t("customOption")}</SelectItem>
               </SelectContent>
             </Select>
             {(!hostDomains.includes(form.domain) || form.domain === "") && (

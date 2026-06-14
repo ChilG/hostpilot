@@ -71,7 +71,6 @@ pub struct AppSettings {
     pub show_error_alerts: bool,
     pub port_status_alerts: bool,
     pub color_theme: String,
-    pub compact_mode: bool,
     pub language: String,
 }
 

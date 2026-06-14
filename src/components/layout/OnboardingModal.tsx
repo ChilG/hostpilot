@@ -74,9 +74,7 @@ export function OnboardingModal({ open, onOpenChange }: Props) {
             <div className="space-y-3 text-center">
               <h2 className="text-xl font-bold tracking-tight">{t("welcome")}</h2>
               <p className="text-xs text-muted-foreground leading-5">
-                {t("locale") === "th"
-                  ? "HostPilot คือแอปพลิเคชันเดสก์ท็อปแบบข้ามแพลตฟอร์ม ออกแบบมาเพื่อช่วยเหลือนักพัฒนาในการจัดการระบบกำหนดไอพีของโดเมนในเครื่อง (Local Domain Mappings) และจัดการพอร์ตบริการเว็บได้อย่างง่ายดาย ปลอดภัย และแสดงผลเป็นรูปธรรม"
-                  : "HostPilot is a cross-platform desktop application designed to help developers manage local domain mappings and port references safely, visually, and without hassle."}
+                {t("onboardingWelcomeDesc")}
               </p>
             </div>
           )}
@@ -85,12 +83,10 @@ export function OnboardingModal({ open, onOpenChange }: Props) {
           {slide === 1 && (
             <div className="space-y-3 text-center">
               <h2 className="text-xl font-bold tracking-tight">
-                {t("locale") === "th" ? "การปกป้องขอบเขตบล็อกข้อมูล" : "Block-Scope Safety"}
+                {t("onboardingBlockSafetyTitle")}
               </h2>
               <p className="text-xs text-muted-foreground leading-5">
-                {t("locale") === "th"
-                  ? "HostPilot ปกป้องระบบของคุณโดยการเขียนเพิ่มหรือลดข้อมูลโฮสต์เฉพาะภายในกรอบที่คั่นด้วยสัญลักษณ์บล็อกเท่านั้น เพื่อให้มั่นใจได้ว่าข้อมูลการตั้งค่าเดิมในไฟล์ hosts ของระบบปฏิบัติการของคุณจะไม่ถูกเปลี่ยนแปลงหรือสูญหายไป"
-                  : "HostPilot protects your configuration files by injecting entries exclusively inside delimited scopes. Your existing hosts file records are preserved untouched!"}
+                {t("onboardingBlockSafetyDesc")}
               </p>
               <div className="bg-muted/50 rounded-lg p-3 text-left border border-border">
                 <pre className="text-[10px] font-mono text-muted-foreground/85 leading-4 whitespace-pre-wrap">
@@ -104,12 +100,10 @@ export function OnboardingModal({ open, onOpenChange }: Props) {
           {slide === 2 && (
             <div className="space-y-3 text-center">
               <h2 className="text-xl font-bold tracking-tight">
-                {t("locale") === "th" ? "สิทธิ์การเข้าถึงระดับระบบปฏิบัติการ" : "Elevated Permissions"}
+                {t("onboardingPermissionsTitle")}
               </h2>
               <p className="text-xs text-muted-foreground leading-5">
-                {t("locale") === "th"
-                  ? "การบันทึกไฟล์ hosts จำเป็นต้องใช้สิทธิ์ของระบบผู้ดูแลระบบ (Admin) ในการเขียนทับ เพื่อหลีกเลี่ยงไม่ให้มีกล่องถามรหัสผ่านขึ้นมากวนใจทุกครั้งที่คุณทำการอัปเดต คุณสามารถรันคำสั่ง terminal นี้เพื่อเปลี่ยนสิทธิ์การเข้าถึงไฟล์ได้:"
-                  : "Modifying the hosts file requires system admin privileges. To avoid password prompts on every save, you can make the hosts file writable by running this terminal command:"}
+                {t("onboardingPermissionsDesc")}
               </p>
               <div className="flex items-center gap-2 bg-muted/60 rounded-lg p-2.5 border border-border">
                 <code className="text-[10px] font-mono text-indigo-400 flex-1 truncate text-left">
@@ -126,12 +120,10 @@ export function OnboardingModal({ open, onOpenChange }: Props) {
           {slide === 3 && (
             <div className="space-y-3 text-center">
               <h2 className="text-xl font-bold tracking-tight">
-                {t("locale") === "th" ? "คุณพร้อมบินแล้ว!" : "You're Ready to Fly!"}
+                {t("onboardingReadyTitle")}
               </h2>
               <p className="text-xs text-muted-foreground leading-5">
-                {t("locale") === "th"
-                  ? "เริ่มต้นใช้งานโดยการเพิ่มรายชื่อโฮสต์หรือจับคู่พอร์ตตัวจริง และจัดกลุ่มพวกมันเข้าไว้ในโปรไฟล์ที่ต้องการ เพื่อเปิดสลับสภาพแวดล้อมต่าง ๆ ในการทดสอบโปรแกรมได้ในพริบตา"
-                  : "Get started by adding your first hosts or mapping configurations, and group them into custom profiles to swap local setups instantly."}
+                {t("onboardingReadyDesc")}
               </p>
             </div>
           )}
@@ -160,7 +152,7 @@ export function OnboardingModal({ open, onOpenChange }: Props) {
                 disabled={slide === 0}
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
-                {t("locale") === "th" ? "ย้อนกลับ" : "Back"}
+                {t("back")}
               </Button>
               <Button
                 size="sm"
@@ -168,10 +160,10 @@ export function OnboardingModal({ open, onOpenChange }: Props) {
                 onClick={handleNext}
               >
                 {slide === totalSlides - 1 ? (
-                  t("locale") === "th" ? "เริ่มใช้งานเลย" : "Get Started"
+                  t("getStarted")
                 ) : (
                   <>
-                    {t("locale") === "th" ? "ถัดไป" : "Next"}
+                    {t("next")}
                     <ChevronRight className="w-3.5 h-3.5" />
                   </>
                 )}

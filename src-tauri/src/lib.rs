@@ -3,7 +3,7 @@ mod db;
 mod hosts;
 mod ports;
 
-use config::{AppConfig, HostEntry, BackupRecord};
+use config::{AppConfig, BackupRecord, HostEntry};
 use std::process::Command;
 
 #[tauri::command]
@@ -39,38 +39,25 @@ fn write_hosts_block(
 }
 
 #[tauri::command]
-fn remove_hosts_block(
-    app_handle: tauri::AppHandle,
-    block_name: String,
-) -> Result<(), String> {
+fn remove_hosts_block(app_handle: tauri::AppHandle, block_name: String) -> Result<(), String> {
     // Passing empty entries removes the block from hosts file
     hosts::write_hosts_block(&app_handle, &block_name, &[])
 }
 
 #[tauri::command]
-fn backup_hosts_file(
-    app_handle: tauri::AppHandle,
-    reason: String,
-) -> Result<BackupRecord, String> {
+fn backup_hosts_file(app_handle: tauri::AppHandle, reason: String) -> Result<BackupRecord, String> {
     hosts::backup_hosts_file(&app_handle, &reason)
 }
 
 #[tauri::command]
-fn restore_backup(
-    app_handle: tauri::AppHandle,
-    backup_id: String,
-) -> Result<(), String> {
+fn restore_backup(app_handle: tauri::AppHandle, backup_id: String) -> Result<(), String> {
     hosts::restore_backup(&app_handle, &backup_id)
 }
 
 #[tauri::command]
-fn delete_backup_file(
-    app_handle: tauri::AppHandle,
-    backup_id: String,
-) -> Result<(), String> {
+fn delete_backup_file(app_handle: tauri::AppHandle, backup_id: String) -> Result<(), String> {
     hosts::delete_backup_file(&app_handle, &backup_id)
 }
-
 
 #[tauri::command]
 fn load_app_config(app_handle: tauri::AppHandle) -> Result<AppConfig, String> {
@@ -83,11 +70,11 @@ fn save_app_config(app_handle: tauri::AppHandle, config: AppConfig) -> Result<()
 }
 
 #[tauri::command]
-fn check_port(host: String, port: u16) -> bool {
-    ports::is_port_open(&host, port)
+async fn check_port(host: String, port: u16) -> bool {
+    tauri::async_runtime::spawn_blocking(move || ports::is_port_open(&host, port))
+        .await
+        .unwrap_or(false)
 }
-
-
 
 #[tauri::command]
 fn save_config_file(content: String, default_name: String) -> Result<Option<String>, String> {
@@ -110,15 +97,19 @@ fn save_config_file(content: String, default_name: String) -> Result<Option<Stri
 fn reveal_in_finder(path: String) {
     #[cfg(target_os = "macos")]
     let _ = Command::new("open").arg("-R").arg(&path).spawn();
-    
+
     #[cfg(target_os = "windows")]
     let _ = Command::new("explorer")
         .arg(format!("/select,\"{}\"", path))
         .spawn();
-        
+
     #[cfg(target_os = "linux")]
     let _ = Command::new("xdg-open")
-        .arg(std::path::Path::new(&path).parent().unwrap_or(std::path::Path::new("/")))
+        .arg(
+            std::path::Path::new(&path)
+                .parent()
+                .unwrap_or(std::path::Path::new("/")),
+        )
         .spawn();
 }
 
@@ -126,10 +117,10 @@ fn reveal_in_finder(path: String) {
 fn open_in_browser(url: String) {
     #[cfg(target_os = "macos")]
     let _ = Command::new("open").arg(&url).spawn();
-    
+
     #[cfg(target_os = "windows")]
     let _ = Command::new("cmd").args(&["/C", "start", &url]).spawn();
-    
+
     #[cfg(target_os = "linux")]
     let _ = Command::new("xdg-open").arg(&url).spawn();
 }

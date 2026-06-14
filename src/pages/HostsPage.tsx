@@ -63,7 +63,7 @@ export function HostsPage() {
   const handleDelete = () => {
     if (!deleteTarget) return;
     deleteHost(deleteTarget.id);
-    toast.success(`Host "${deleteTarget.domain}" deleted`);
+    toast.success(t("hostDeletedToast", { domain: deleteTarget.domain }));
     setDeleteTarget(undefined);
   };
 
@@ -107,7 +107,7 @@ export function HostsPage() {
                   : "bg-muted text-muted-foreground hover:bg-muted/80"
               }`}
             >
-              {t("locale") === "th" ? "ทั้งหมด" : "All"}
+              {t("all")}
             </button>
             {groups.map((g) => (
               <button
@@ -226,7 +226,7 @@ export function HostsPage() {
         mode={formMode}
         host={editTarget}
         onSave={() =>
-          toast.success(formMode === "create" ? "Host added" : "Host updated")
+          toast.success(formMode === "create" ? t("hostCreated") : t("hostUpdated"))
         }
       />
 

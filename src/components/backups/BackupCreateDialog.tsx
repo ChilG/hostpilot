@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { useAppStore } from "@/store/AppStore";
 import { useTranslation } from "@/i18n/translations";
 import { toast } from "sonner";
+import { getBackupSchema } from "@/lib/schemas";
 
 type Props = {
   open: boolean;
@@ -23,18 +24,46 @@ export function BackupCreateDialog({ open, onOpenChange, onSave }: Props) {
   const { addBackup } = useAppStore();
   const { t } = useTranslation();
   const [reason, setReason] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    if (open) setReason("");
+    if (open) {
+      setReason("");
+      setErrors({});
+    }
   }, [open]);
 
+  const validate = () => {
+    const schema = getBackupSchema(t);
+    const result = schema.safeParse({
+      reason: reason.trim() || t("manualBackup"),
+    });
+
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.issues.forEach((err) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0].toString()] = err.message;
+        }
+      });
+      return fieldErrors;
+    }
+    return {};
+  };
+
   const handleSave = async () => {
+    const e = validate();
+    if (Object.keys(e).length) {
+      setErrors(e);
+      return;
+    }
+
     try {
-      await addBackup(reason.trim() || (t("locale") === "th" ? "การสำรองข้อมูลด้วยตนเอง" : "Manual backup"));
+      await addBackup(reason.trim() || t("manualBackup"));
       onSave?.();
       onOpenChange(false);
     } catch (err) {
-      toast.error(t("locale") === "th" ? "ไม่สามารถสำรองข้อมูลได้" : "Failed to create backup", {
+      toast.error(t("failedToCreateBackup"), {
         description: String(err),
       });
     }
@@ -49,9 +78,7 @@ export function BackupCreateDialog({ open, onOpenChange, onSave }: Props) {
 
         <div className="space-y-4 py-2">
           <p className="text-sm text-muted-foreground">
-            {t("locale") === "th"
-              ? "ทำการบันทึกภาพสำเนา (Snapshot) ประวัติของไฟล์ hosts ในระบบของคุณ ณ ตอนนี้เก็บรักษาไว้"
-              : "Creates a snapshot of the current hosts state."}
+            {t("backupSnapshotDesc")}
           </p>
           <div className="space-y-1.5">
             <Label htmlFor="backup-reason">{t("backupReason")}</Label>
@@ -60,7 +87,9 @@ export function BackupCreateDialog({ open, onOpenChange, onSave }: Props) {
               placeholder={t("reasonPlaceholder")}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
+              className={errors.reason ? "border-red-500" : ""}
             />
+            {errors.reason && <p className="text-xs text-red-400">{errors.reason}</p>}
           </div>
         </div>
 

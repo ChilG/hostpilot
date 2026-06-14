@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAppStore, type HostProfile } from "@/store/AppStore";
 import { useTranslation } from "@/i18n/translations";
+import { getProfileSchema } from "@/lib/schemas";
 
 type Props = {
   open: boolean;
@@ -47,11 +48,28 @@ export function ProfileFormDialog({ open, onOpenChange, mode, profile, onSave }:
         : [...f.entryIds, id],
     }));
 
-  const handleSave = () => {
-    const e: Record<string, string> = {};
-    if (!form.name.trim()) {
-      e.name = t("locale") === "th" ? "กรุณาระบุชื่อโปรไฟล์" : "Name is required";
+  const validate = () => {
+    const schema = getProfileSchema(t);
+    const result = schema.safeParse({
+      name: form.name.trim(),
+      description: form.description.trim() || undefined,
+      entryIds: form.entryIds,
+    });
+
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.issues.forEach((err) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0].toString()] = err.message;
+        }
+      });
+      return fieldErrors;
     }
+    return {};
+  };
+
+  const handleSave = () => {
+    const e = validate();
     if (Object.keys(e).length) {
       setErrors(e);
       return;
@@ -106,12 +124,12 @@ export function ProfileFormDialog({ open, onOpenChange, mode, profile, onSave }:
 
           <div className="space-y-2">
             <Label>
-              {t("selectHosts")} ({form.entryIds.length} {t("locale") === "th" ? "ที่เลือกอยู่" : "selected"})
+              {t("selectHosts")} ({t("hostsSelectedText", { count: form.entryIds.length })})
             </Label>
             <div className="max-h-52 overflow-y-auto space-y-1 rounded-lg border border-border p-2 bg-muted/20">
               {hosts.length === 0 && (
                 <p className="text-xs text-muted-foreground text-center py-4">
-                  {t("locale") === "th" ? "ยังไม่มีรายการโฮสต์ในระบบ กรุณาเพิ่มที่หน้าโฮสต์" : "No hosts yet. Add some on the Hosts page."}
+                  {t("noHostsYetMessage")}
                 </p>
               )}
               {hosts.map((h) => {

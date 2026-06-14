@@ -37,7 +37,6 @@ export type AppSettings = {
   showErrorAlerts: boolean;
   portStatusAlerts: boolean;
   colorTheme: "dark" | "light" | "system";
-  compactMode: boolean;
   language: "en" | "th";
 };
 
@@ -53,7 +52,6 @@ export const defaultSettings: AppSettings = {
   showErrorAlerts: true,
   portStatusAlerts: false,
   colorTheme: "dark",
-  compactMode: false,
   language: "en",
 };
 
@@ -217,9 +215,6 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       if (patch.colorTheme !== undefined) {
         applyThemeClass(patch.colorTheme);
       }
-      if (patch.compactMode !== undefined) {
-        applyCompactClass(patch.compactMode);
-      }
       if (patch.language !== undefined) {
         applyLanguageClass(patch.language);
       }
@@ -239,16 +234,6 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Helper to apply compact mode class dynamically
-  const applyCompactClass = (compact: boolean) => {
-    const root = document.documentElement;
-    if (compact) {
-      root.classList.add("compact");
-    } else {
-      root.classList.remove("compact");
-    }
-  };
-
   // Helper to apply language attributes dynamically
   const applyLanguageClass = (lang: "en" | "th") => {
     const root = document.documentElement;
@@ -259,10 +244,9 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!loading) {
       applyThemeClass(settings.colorTheme);
-      applyCompactClass(settings.compactMode);
       applyLanguageClass(settings.language);
     }
-  }, [settings.colorTheme, settings.compactMode, settings.language, loading]);
+  }, [settings.colorTheme, settings.language, loading]);
 
   // ── Hosts ──
   const addHost = (h: Omit<HostEntry, "id" | "createdAt" | "updatedAt">) =>

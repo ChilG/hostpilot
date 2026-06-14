@@ -42,11 +42,10 @@ export function GroupsPage() {
     if (!deleteTarget) return;
     const assignedCount = hosts.filter((h) => h.groupId === deleteTarget.id).length;
     deleteGroup(deleteTarget.id);
-    toast.success(
-      t("locale") === "th"
-        ? `ลบกลุ่ม "${deleteTarget.name}" เรียบร้อยแล้ว${assignedCount > 0 ? ` — มี ${assignedCount} โฮสต์ถูกถอดการเชื่อมโยง` : ""}`
-        : `Group "${deleteTarget.name}" deleted${assignedCount > 0 ? ` — ${assignedCount} host(s) unassigned` : ""}`
-    );
+    const unassignedMsg = assignedCount > 0
+      ? t("unassignedHostsDetail", { count: assignedCount })
+      : "";
+    toast.success(t("groupDeletedToast", { name: deleteTarget.name, unassignedMsg }));
     setDeleteTarget(undefined);
   };
 
@@ -184,13 +183,7 @@ export function GroupsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>{t("deleteGroupConfirm")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("locale") === "th"
-                ? `ลบกลุ่ม "${deleteTarget?.name}" ออกจากระบบ?`
-                : `"${deleteTarget?.name}" will be deleted.`}{" "}
-              {hosts.filter((h) => h.groupId === deleteTarget?.id).length > 0 &&
-                (t("locale") === "th"
-                  ? `โฮสต์จำนวน ${hosts.filter((h) => h.groupId === deleteTarget?.id).length} รายการจะถูกถอดกลุ่ม`
-                  : `${hosts.filter((h) => h.groupId === deleteTarget?.id).length} host(s) will be unassigned.`)}
+              {t("deleteGroupText")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

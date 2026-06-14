@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { useAppStore, type HostEntry } from "@/store/AppStore";
 import { useTranslation } from "@/i18n/translations";
+import { getHostSchema } from "@/lib/schemas";
 
 type Props = {
   open: boolean;
@@ -61,19 +62,24 @@ export function HostFormDialog({ open, onOpenChange, mode, host, onSave }: Props
   }, [open, mode, host]);
 
   const validate = () => {
-    const e: Record<string, string> = {};
-    if (!form.domain.trim()) {
-      e.domain = t("locale") === "th" ? "กรุณาระบุชื่อโดเมน" : "Domain is required";
-    } else if (!/^[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/.test(form.domain.trim())) {
-      e.domain = t("invalidDomainError");
+    const schema = getHostSchema(t);
+    const result = schema.safeParse({
+      domain: form.domain.trim(),
+      ip: form.ip.trim(),
+      groupId: form.groupId || undefined,
+      description: form.description.trim() || undefined,
+    });
+
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.issues.forEach((err) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0].toString()] = err.message;
+        }
+      });
+      return fieldErrors;
     }
-    
-    if (!form.ip.trim()) {
-      e.ip = t("locale") === "th" ? "กรุณาระบุไอพีแอดเดรส" : "IP is required";
-    } else if (!/^(\d{1,3}\.){3}\d{1,3}$/.test(form.ip.trim())) {
-      e.ip = t("invalidIpError");
-    }
-    return e;
+    return {};
   };
 
   const handleSave = () => {
@@ -143,7 +149,7 @@ export function HostFormDialog({ open, onOpenChange, mode, host, onSave }: Props
                 <SelectValue placeholder={t("selectGroup")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">{t("locale") === "th" ? "ไม่มีกลุ่ม" : "No group"}</SelectItem>
+                <SelectItem value="none">{t("noGroup")}</SelectItem>
                 {groups.map((g) => (
                   <SelectItem key={g.id} value={g.id}>
                     {g.name}

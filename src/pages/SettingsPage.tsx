@@ -254,17 +254,6 @@ export function SettingsPage() {
             </div>
           </SettingRow>
           <SettingRow
-            label={t("compactMode")}
-            description={t("compactModeDesc")}
-          >
-            <Switch
-              checked={settings.compactMode}
-              onCheckedChange={(checked) =>
-                updateSettings({ compactMode: checked })
-              }
-            />
-          </SettingRow>
-          <SettingRow
             label={t("languageSetting")}
             description={t("languageSettingDesc")}
           >

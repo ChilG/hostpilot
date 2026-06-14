@@ -15,23 +15,7 @@ import {
 
 type Tab = "import" | "export";
 
-const sampleConfigJson = JSON.stringify(
-  {
-    version: "1.0.0",
-    project: "demo-local",
-    name: "Demo Local ENV",
-    entries: [
-      { domain: "web.local", ip: "127.0.0.1", enabled: true, group: "frontend" },
-      { domain: "api.local", ip: "127.0.0.1", enabled: true, group: "backend" },
-    ],
-    ports: [
-      { domain: "web.local", targetHost: "127.0.0.1", port: 3000, protocol: "http" },
-      { domain: "api.local", targetHost: "127.0.0.1", port: 8080, protocol: "http" },
-    ],
-  },
-  null,
-  2
-);
+
 
 export function ImportExportPage() {
   const { hosts, groups, profiles, ports, addHost, addPort, addGroup } = useAppStore();
@@ -41,7 +25,7 @@ export function ImportExportPage() {
 
   // config.json import state
   const [jsonImportStep, setJsonImportStep] = useState<"idle" | "preview" | "done">("idle");
-  const [jsonImportText, setJsonImportText] = useState(sampleConfigJson);
+  const [jsonImportText, setJsonImportText] = useState("");
   const [parsedJsonConfig, setParsedJsonConfig] = useState<any>(null);
   const jsonFileRef = useRef<HTMLInputElement>(null);
 
@@ -96,7 +80,7 @@ export function ImportExportPage() {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      toast.success(`${filename} ${t("locale") === "th" ? "ดาวน์โหลดเรียบร้อยแล้ว!" : "downloaded successfully!"}`);
+      toast.success(t("exportSuccessFilename", { filename }));
     }
   };
 
@@ -115,14 +99,12 @@ export function ImportExportPage() {
         setJsonImportStep("preview");
       } else {
         toast.error(
-          t("locale") === "th"
-            ? "รูปแบบไฟล์การตั้งค่าไม่ถูกต้อง: ไม่พบข้อมูลโฮสต์ กลุ่ม โปรไฟล์ หรือพอร์ต"
-            : "Invalid config format: no valid hosts, groups, profiles, or ports data found."
+          t("invalidConfigFormat")
         );
       }
     } catch (err) {
       toast.error(
-        t("locale") === "th" ? "เกิดข้อผิดพลาดในการอ่านไฟล์การตั้งค่า JSON" : "Failed to parse JSON configuration file."
+        t("jsonParseError")
       );
     }
   };
@@ -189,9 +171,7 @@ export function ImportExportPage() {
     });
 
     toast.success(t("importSuccessToast"), {
-      description: t("locale") === "th"
-        ? `เพิ่มโฮสต์ ${hostsImported} รายการ, กลุ่ม ${groupsImported} รายการ, และกฎพอร์ต ${portsImported} รายการ`
-        : `Added ${hostsImported} hosts, ${groupsImported} groups, and ${portsImported} port rules.`,
+      description: t("importSuccessDetail", { hosts: hostsImported, groups: groupsImported, ports: portsImported }),
     });
     setJsonImportStep("done");
   };
@@ -227,12 +207,12 @@ export function ImportExportPage() {
               {tValue === "import" ? (
                 <span className="flex items-center gap-1.5">
                   <Upload className="w-3.5 h-3.5" />
-                  {t("locale") === "th" ? "นำเข้า" : "Import"}
+                  {t("import")}
                 </span>
               ) : (
                 <span className="flex items-center gap-1.5">
                   <Download className="w-3.5 h-3.5" />
-                  {t("locale") === "th" ? "ส่งออก" : "Export"}
+                  {t("export")}
                 </span>
               )}
             </button>
@@ -250,9 +230,7 @@ export function ImportExportPage() {
                 <div>
                   <p className="font-semibold text-sm">hostpilot.config.json</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {t("locale") === "th"
-                      ? "การตั้งค่าแบบเต็มรูปแบบประกอบด้วยรายการโฮสต์ กลุ่ม โปรไฟล์ และกฎพอร์ต"
-                      : "Full configuration containing hosts, groups, profiles, and ports"}
+                    {t("importConfigDetail")}
                   </p>
                 </div>
               </div>
@@ -265,10 +243,10 @@ export function ImportExportPage() {
                   >
                     <Upload className="w-8 h-8 text-violet-400" />
                     <p className="text-sm font-medium">
-                      {t("locale") === "th" ? "คลิกเพื่อเลือกไฟล์อัปโหลด" : "Click to upload config file"}
+                      {t("clickToUploadConfig")}
                     </p>
                     <p className="text-xs">
-                      {t("locale") === "th" ? "รองรับโครงสร้างแบบ hostpilot.config.json เท่านั้น" : "Supports only hostpilot.config.json format"}
+                      {t("supportFormatOnly")}
                     </p>
                   </button>
                 </div>
@@ -284,7 +262,7 @@ export function ImportExportPage() {
                   </div>
                   <div className="flex items-center gap-1.5 text-xs text-violet-400 bg-violet-500/10 rounded-md px-3 py-2">
                     <CheckCircle2 className="w-3.5 h-3.5" />
-                    {t("locale") === "th" ? "ตรวจพบไฟล์การตั้งค่าที่ถูกต้อง พร้อมนำเข้าผสานข้อมูล" : "Valid config file detected. Ready to merge."}
+                    {t("validConfigFile")}
                   </div>
                   <div className="flex gap-2">
                     <Button
@@ -300,7 +278,7 @@ export function ImportExportPage() {
                       className="flex-1 h-8 text-xs bg-violet-600 hover:bg-violet-700 text-white gap-1.5 cursor-pointer"
                       onClick={triggerJsonImport}
                     >
-                      {t("locale") === "th" ? "นำเข้าข้อมูลการตั้งค่า" : "Import Config"}
+                      {t("importConfig")}
                       <ArrowRight className="w-3 h-3" />
                     </Button>
                   </div>
@@ -311,7 +289,7 @@ export function ImportExportPage() {
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 text-sm text-emerald-400 bg-emerald-500/10 rounded-lg px-4 py-3">
                     <CheckCircle2 className="w-4 h-4" />
-                    {t("locale") === "th" ? "ผสานไฟล์ข้อมูลการตั้งค่าเข้าสู่พื้นที่ทำงานแล้ว!" : "Config successfully merged into your workspace!"}
+                    {t("importSuccessAlert")}
                   </div>
                   <Button
                     variant="outline"
@@ -319,7 +297,7 @@ export function ImportExportPage() {
                     className="w-full h-8 text-xs cursor-pointer"
                     onClick={() => setJsonImportStep("idle")}
                   >
-                    {t("locale") === "th" ? "นำเข้าไฟล์เพิ่มเติม" : "Import Another"}
+                    {t("importAnother")}
                   </Button>
                 </div>
               )}
@@ -328,23 +306,23 @@ export function ImportExportPage() {
             {/* Import Behavior Options */}
             <div className="rounded-xl border border-border bg-card p-5">
               <p className="text-sm font-medium mb-3">
-                {t("locale") === "th" ? "ตัวเลือกการนำเข้าข้อมูล" : "Import Behavior Options"}
+                {t("importBehaviorOptions")}
               </p>
               <div className="grid grid-cols-3 gap-3">
                 {[
                   {
-                    label: t("locale") === "th" ? "ผสานข้อมูล" : "Merge",
-                    desc: t("locale") === "th" ? "เพิ่มรายการใหม่ โดยคงรักษาข้อมูลเดิมไว้" : "Add new entries, keep existing ones",
+                    label: t("importMergeLabel"),
+                    desc: t("importMergeDesc"),
                     active: true,
                   },
                   {
-                    label: t("locale") === "th" ? "เขียนทับโปรไฟล์" : "Replace Profile",
-                    desc: t("locale") === "th" ? "เขียนทับเฉพาะข้อมูลบล็อกที่โปรแกรมคอยดูแลอยู่" : "Replace only managed block entries",
+                    label: t("importReplaceProfileLabel"),
+                    desc: t("importReplaceProfileDesc"),
                     active: false,
                   },
                   {
-                    label: t("locale") === "th" ? "เขียนทับข้อมูลทั้งหมด" : "Full Replace",
-                    desc: t("locale") === "th" ? "เขียนทับไฟล์โฮสต์และประวัติทั้งหมดด้วยไฟล์นี้" : "Replace all hostpilot-managed entries",
+                    label: t("importFullReplaceLabel"),
+                    desc: t("importFullReplaceDesc"),
                     active: false,
                   },
                 ].map((opt) => (
@@ -390,14 +368,14 @@ export function ImportExportPage() {
                 onClick={() => handleDownload("hostpilot.config.json", getJsonString())}
               >
                 <Download className="w-3.5 h-3.5" />
-                {t("locale") === "th" ? "ดาวน์โหลดไฟล์ config.json" : "Download config.json"}
+                {t("downloadConfigFile")}
               </Button>
             </div>
 
             {/* Export scope selector */}
             <div className="rounded-xl border border-border bg-card p-5">
               <p className="text-sm font-medium mb-3">
-                {t("locale") === "th" ? "ขอบเขตการส่งออกข้อมูล" : "Export Scope"}
+                {t("exportScopeTitle")}
               </p>
               <div className="grid grid-cols-2 gap-3">
                 {[
@@ -408,7 +386,7 @@ export function ImportExportPage() {
                   },
                   {
                     id: "all",
-                    label: t("locale") === "th" ? "รายการโฮสต์ทั้งหมดในระบบ" : "All Hosts",
+                    label: t("allHostsLabel"),
                     count: exportScope === "all" ? exportHosts.length : hosts.length,
                   },
                 ].map((scope) => (
@@ -424,7 +402,7 @@ export function ImportExportPage() {
                       <p className="text-xs font-semibold">{scope.label}</p>
                     </div>
                     <p className="text-[10px] text-muted-foreground">
-                      {scope.count} {t("locale") === "th" ? "รายการ" : "entries"}
+                      {t("entriesLabel", { count: scope.count })}
                     </p>
                   </button>
                 ))}

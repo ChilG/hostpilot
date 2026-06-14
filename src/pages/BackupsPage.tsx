@@ -29,9 +29,7 @@ export function BackupsPage() {
   const handleDelete = () => {
     if (!deleteTarget) return;
     deleteBackup(deleteTarget.id);
-    toast.success(
-      t("locale") === "th" ? "ลบไฟล์สำรองข้อมูลเรียบร้อยแล้ว" : "Backup deleted"
-    );
+    toast.success(t("backupDeletedToast"));
     setDeleteTarget(undefined);
   };
 
@@ -61,9 +59,7 @@ export function BackupsPage() {
     a.download = `hosts-backup-${backup.id}.txt`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success(
-      t("locale") === "th" ? "ดาวน์โหลดไฟล์สำรองข้อมูลสำเร็จ" : "Backup downloaded"
-    );
+    toast.success(t("backupDownloadedToast"));
   };
 
   const totalSize = backups.reduce((sum, b) => {
@@ -93,12 +89,10 @@ export function BackupsPage() {
           <ShieldCheck className="w-4 h-4 text-violet-400 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-medium text-violet-400">
-              {t("locale") === "th" ? "กลยุทธ์สำรองข้อมูลอัตโนมัติ" : "Auto Backup Strategy"}
+              {t("autoBackupStrategy")}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              {t("locale") === "th"
-                ? "HostPilot จะสร้างไฟล์สำรองของไฟล์ hosts ของระบบของคุณโดยอัตโนมัติก่อนที่จะเขียนบันทึกข้อมูลทุกครั้ง คุณสามารถกู้คืน (Restore) ไฟล์สำรองข้อมูลเมื่อใดก็ได้ ไฟล์สำรองข้อมูลเหล่านี้จะถูกจัดเก็บไว้ในเครื่องของคุณภายในโฟลเดอร์เก็บข้อมูลของโปรแกรม"
-                : "hostpilot automatically creates a backup of your hosts file before every write. You can restore any backup at any time. Backups are stored locally inside the application data folder."}
+              {t("autoBackupStrategyDesc")}
             </p>
           </div>
         </div>
@@ -108,21 +102,21 @@ export function BackupsPage() {
           <div className="rounded-xl border border-border bg-card p-4 text-center space-y-1">
             <p className="text-2xl font-bold">{backups.length}</p>
             <p className="text-xs text-muted-foreground">
-              {t("locale") === "th" ? "ไฟล์สำรองทั้งหมด" : "Total backups"}
+              {t("totalBackups")}
             </p>
           </div>
           <div className="rounded-xl border border-border bg-card p-4 text-center space-y-1">
             <p className="text-2xl font-bold">{totalSize.toFixed(1)} KB</p>
             <p className="text-xs text-muted-foreground">
-              {t("locale") === "th" ? "ขนาดรวม" : "Total size"}
+              {t("totalSize")}
             </p>
           </div>
           <div className="rounded-xl border border-border bg-card p-4 text-center space-y-1">
             <p className="text-2xl font-bold text-emerald-400">
-              {t("locale") === "th" ? "ปลอดภัย" : "Safe"}
+              {t("safeLabel")}
             </p>
             <p className="text-xs text-muted-foreground">
-              {t("locale") === "th" ? "สถานะความปลอดภัย" : "Restore status"}
+              {t("restoreStatus")}
             </p>
           </div>
         </div>
@@ -132,7 +126,7 @@ export function BackupsPage() {
           <div className="px-5 py-3 flex items-center gap-2 border-b border-border bg-muted/20">
             <Clock className="w-3.5 h-3.5 text-muted-foreground" />
             <span className="text-xs font-medium text-muted-foreground">
-              {t("locale") === "th" ? "ประวัติการสำรองข้อมูล" : "Backup History"}
+              {t("backupHistory")}
             </span>
           </div>
           {backups.length === 0 && (
@@ -160,7 +154,7 @@ export function BackupsPage() {
                     <p className="text-sm font-medium">{new Date(backup.createdAt).toLocaleString()}</p>
                     {i === 0 && (
                       <Badge className="bg-violet-500/15 text-violet-400 border-0 text-[10px]">
-                        {t("locale") === "th" ? "ล่าสุด" : "Latest"}
+                        {t("latestTag")}
                       </Badge>
                     )}
                   </div>
@@ -236,7 +230,7 @@ export function BackupsPage() {
             <AlertDialogTitle>{t("restoreBackupConfirm")}</AlertDialogTitle>
             <AlertDialogDescription>
               {t("restoreBackupText")} ({restoreTarget && new Date(restoreTarget.createdAt).toLocaleString()})
-              {isTauri && ` (${t("locale") === "th" ? "คุณจะได้รับป๊อปอัปให้ใส่รหัสผ่านผู้ดูแลระบบจากระบบปฏิบัติการของคุณ" : "You will be prompted by the system for administrator credentials to apply these changes."})`}
+              {isTauri && ` (${t("adminCredentialsNote")})`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

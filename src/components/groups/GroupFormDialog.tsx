@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAppStore, type HostGroup } from "@/store/AppStore";
 import { useTranslation } from "@/i18n/translations";
+import { getGroupSchema } from "@/lib/schemas";
 
 type Props = {
   open: boolean;
@@ -45,11 +46,28 @@ export function GroupFormDialog({ open, onOpenChange, mode, group, onSave }: Pro
     }
   }, [open, mode, group]);
 
-  const handleSave = () => {
-    const e: Record<string, string> = {};
-    if (!form.name.trim()) {
-      e.name = t("locale") === "th" ? "กรุณากรอกชื่อกลุ่ม" : "Name is required";
+  const validate = () => {
+    const schema = getGroupSchema(t);
+    const result = schema.safeParse({
+      name: form.name.trim(),
+      description: form.description.trim() || undefined,
+      color: form.color,
+    });
+
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.issues.forEach((err) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0].toString()] = err.message;
+        }
+      });
+      return fieldErrors;
     }
+    return {};
+  };
+
+  const handleSave = () => {
+    const e = validate();
     if (Object.keys(e).length) {
       setErrors(e);
       return;
