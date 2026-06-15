@@ -1,8 +1,16 @@
-# hostpilot
+<p align="center">
+  <img src="./src/assets/logo.png" width="128" height="128" alt="Host Pilot Logo" />
+</p>
 
-A desktop app for managing local domain mappings in your system hosts file — built for developers who run production-like local environments.
+<h1 align="center">Host Pilot</h1>
 
-> Built with Tauri · React · TypeScript · shadcn/ui · Tailwind CSS
+<p align="center">
+  A desktop app for managing local domain mappings in your system hosts file — built for developers who run production-like local environments.
+</p>
+
+<p align="center">
+  <strong>Built with Tauri · React · TypeScript · shadcn/ui · Tailwind CSS</strong>
+</p>
 
 ---
 
