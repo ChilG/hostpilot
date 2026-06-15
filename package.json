@@ -1,14 +1,15 @@
 {
   "name": "hostpilot",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "release": "./scripts/release.sh"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.9",

@@ -104,6 +104,27 @@ pnpm tauri dev
 pnpm tauri build
 ```
 
+### How to Release
+
+A helper script is provided to automate version bumping, tagging, and pushing. You can run it via the npm/pnpm script:
+
+```bash
+pnpm release
+```
+
+Or execute the script directly:
+
+```bash
+./scripts/release.sh
+```
+
+This script will:
+1. Prompt for the new version.
+2. Update versions in `package.json`, `src-tauri/tauri.conf.json`, and `src-tauri/Cargo.toml`.
+3. Update `Cargo.lock` by running `cargo check`.
+4. Commit the changes and tag them (e.g. `v1.0.0`).
+5. Ask to push to origin, which triggers the GitHub Action release build.
+
 ---
 
 ## Roadmap
