@@ -143,6 +143,11 @@ fn get_system_locale() -> String {
     sys_locale::get_locale().unwrap_or_else(|| "en".to_string())
 }
 
+#[tauri::command]
+fn relaunch_app(app_handle: tauri::AppHandle) {
+    app_handle.restart();
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -166,6 +171,7 @@ pub fn run() {
             get_default_hosts_path,
             select_backup_directory,
             get_system_locale,
+            relaunch_app,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

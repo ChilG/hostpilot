@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Topbar } from "@/components/layout/Topbar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +15,8 @@ import {
 } from "lucide-react";
 
 import { invoke } from "@tauri-apps/api/core";
-import { useAppStore } from "@/store/AppStore";
+import { useAppStore, isTauri } from "@/store/AppStore";
+import { toast } from "sonner";
 import { useTranslation } from "@/i18n/translations";
 import {
   Select,
@@ -65,6 +67,54 @@ function SettingsSection({ icon, title, children }: SettingsSectionProps) {
 export function SettingsPage() {
   const { settings, updateSettings } = useAppStore();
   const { t } = useTranslation();
+  const [checking, setChecking] = useState(false);
+
+  const handleCheckUpdates = async () => {
+    if (!isTauri) {
+      toast.info("Update check is only available in the desktop application.");
+      return;
+    }
+
+    setChecking(true);
+    const toastId = toast.loading("Checking for updates...");
+    try {
+      const { check } = await import("@tauri-apps/plugin-updater");
+      const update = await check();
+      
+      if (update && update.available) {
+        toast.dismiss(toastId);
+        
+        toast.info(`Update v${update.version} is available!`, {
+          description: "Downloading and installing update...",
+          duration: 5000,
+        });
+
+        await update.downloadAndInstall();
+
+        toast.success("Update installed! Relaunching application...", {
+          duration: 3000,
+        });
+
+        setTimeout(async () => {
+          try {
+            await invoke("relaunch_app");
+          } catch (err) {
+            console.error("Failed to relaunch:", err);
+          }
+        }, 1500);
+
+      } else {
+        toast.dismiss(toastId);
+        toast.success("You are running the latest version!");
+      }
+    } catch (err) {
+      console.error("Failed to check for updates:", err);
+      toast.dismiss(toastId);
+      toast.error("Failed to check for updates.");
+    } finally {
+      setChecking(false);
+    }
+  };
 
   const handleBrowseBackupDir = async () => {
     try {
@@ -288,8 +338,14 @@ export function SettingsPage() {
             label={t("checkUpdates")}
             description={t("lastCheckedToday")}
           >
-            <Button variant="outline" size="sm" className="h-7 text-xs">
-              {t("checkNow")}
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={handleCheckUpdates}
+              disabled={checking}
+            >
+              {checking ? "Checking..." : t("checkNow")}
             </Button>
           </SettingRow>
           <div className="py-4">

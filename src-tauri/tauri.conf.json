@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "hostpilot",
+  "productName": "Host Pilot",
   "version": "0.1.0",
   "identifier": "com.hostpilot.app",
   "build": {
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "hostpilot",
+        "title": "Host Pilot",
         "width": 1100,
         "height": 720,
         "minWidth": 1100,
@@ -24,7 +24,7 @@
       },
       {
         "label": "splashscreen",
-        "title": "hostpilot",
+        "title": "Host Pilot",
         "width": 500,
         "height": 340,
         "resizable": false,
