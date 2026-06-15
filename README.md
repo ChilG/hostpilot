@@ -16,7 +16,7 @@
 
 ## What it does
 
-hostpilot lets you manage `/etc/hosts` entries without ever touching the file directly. Each project can have its own `.hostpilot/hosts.local` config, and hostpilot will safely read, validate, preview, and apply only a managed block — leaving everything else in your hosts file untouched.
+hostpilot lets you manage `/etc/hosts` entries without ever touching the file directly. You can organize host entries into groups, save them as environment-specific profiles, and hostpilot will safely write, validate, preview, and apply only a managed block — leaving everything else in your hosts file untouched.
 
 ```
 # >>> HostPilot START: demo-local
@@ -33,7 +33,6 @@ hostpilot lets you manage `/etc/hosts` entries without ever touching the file di
 - **Hosts management** — add, edit, enable/disable, and organize entries by group
 - **Groups** — color-coded categories (Frontend, Backend, Admin, Staging…)
 - **Profiles** — save and switch between environment configurations instantly
-- **Projects** — import `.hostpilot/hosts.local` from any project folder
 - **Port metadata** — track which local port each domain points to, check live status
 - **Import / Export** — share configurations via `hostpilot.config.json`
 - **Backups** — automatic snapshot before every write, one-click restore
@@ -42,26 +41,9 @@ hostpilot lets you manage `/etc/hosts` entries without ever touching the file di
 
 ---
 
-## Project config format
+## Configuration format
 
-Place a `.hostpilot` folder in any project root:
-
-```
-project-root/
-├─ .hostpilot/
-│  ├─ hosts.local          # plain hosts-format mappings
-│  └─ hostpilot.config.json  # full config with groups, ports, profiles
-```
-
-### `hosts.local`
-
-```
-# Project: Demo Local ENV
-
-127.0.0.1 web.local
-127.0.0.1 api.local
-127.0.0.1 admin.local
-```
+You can share or import your configurations using the `hostpilot.config.json` format:
 
 ### `hostpilot.config.json`
 
@@ -128,7 +110,7 @@ pnpm tauri build
 
 | Version | Focus |
 |---|---|
-| **v1 — Personal MVP** | Local usage, project hosts import, safe writes, backups |
+| **v1 — Personal MVP** | Local usage, configuration import/export, safe writes, backups |
 | **v2 — Developer Productivity** | Port health check, browser open, config templates, CLI |
 | **v3 — Reverse Proxy** | Local proxy so domains map to ports without port numbers |
 | **v4 — Team Tool** | Shared profiles, Git-based config sync, team templates |
