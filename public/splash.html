@@ -69,11 +69,12 @@
       animation: pulseGlow 2s ease-in-out infinite;
     }
 
-    /* Animated SVG logo for hostpilot */
-    .logo-svg {
+    /* Animated Image logo for Host Pilot */
+    .logo-img {
       width: 72px;
       height: 72px;
       z-index: 2;
+      object-fit: contain;
       filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.5));
       animation: floatLogo 3s ease-in-out infinite;
     }
@@ -185,30 +186,11 @@
   <div class="splash-container">
     <div class="logo-container">
       <div class="logo-glow"></div>
-      <!-- SVG Compass + Plane shape indicating Pilot and Host control -->
-      <svg class="logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#a78bfa" /> <!-- Light Violet -->
-            <stop offset="50%" stop-color="#8b5cf6" /> <!-- Violet -->
-            <stop offset="100%" stop-color="#3b82f6" /> <!-- Blue -->
-          </linearGradient>
-        </defs>
-        <!-- Outer subtle circle -->
-        <circle cx="50" cy="50" r="45" fill="none" stroke="url(#logo-grad)" stroke-width="1.5" stroke-dasharray="4 6" opacity="0.6" />
-        
-        <!-- Inner compass markers -->
-        <circle cx="50" cy="50" r="38" fill="none" stroke="#3f3f46" stroke-width="1" opacity="0.4" />
-        
-        <!-- Stylized Airplane/Delta (representing Pilot) -->
-        <path d="M 50 20 L 78 78 L 50 63 L 22 78 Z" fill="url(#logo-grad)" />
-        
-        <!-- Center hub circle -->
-        <circle cx="50" cy="50" r="3" fill="#ffffff" />
-      </svg>
+      <!-- Logo image indicating Host Pilot control -->
+      <img class="logo-img" src="logo.png" alt="Host Pilot Logo" />
     </div>
 
-    <h1 class="title">hostpilot</h1>
+    <h1 class="title">Host Pilot</h1>
     <p class="subtitle">Secure Host Controller</p>
 
     <div class="progress-container">

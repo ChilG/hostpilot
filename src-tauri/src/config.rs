@@ -76,6 +76,17 @@ pub struct AppSettings {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct AppNotification {
+    pub id: String,
+    pub title: String,
+    pub description: String,
+    pub r#type: String, // "info" | "success" | "warning" | "error"
+    pub timestamp: String,
+    pub unread: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AppConfig {
     pub hosts: Vec<HostEntry>,
     pub groups: Vec<HostGroup>,
@@ -85,6 +96,8 @@ pub struct AppConfig {
     #[serde(default)]
     pub onboarded: bool,
     pub settings: Option<AppSettings>,
+    #[serde(default)]
+    pub notifications: Vec<AppNotification>,
 }
 
 impl Default for AppConfig {
@@ -97,6 +110,7 @@ impl Default for AppConfig {
             backups: vec![],
             onboarded: false,
             settings: None,
+            notifications: vec![],
         }
     }
 }

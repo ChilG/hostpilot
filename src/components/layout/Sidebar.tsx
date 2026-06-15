@@ -9,11 +9,11 @@ import {
   ShieldCheck,
   Settings,
   ChevronRight,
-  Anchor,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/i18n/translations";
 import { useAppStore } from "@/store/AppStore";
+import appLogo from "@/assets/logo.png";
 
 async function startDrag() {
   await getCurrentWindow().startDragging();
@@ -66,11 +66,9 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
 
       {/* Brand row — NOT a drag region so future click handlers work */}
       <div className="flex items-center gap-2.5 px-4 py-3 border-b border-sidebar-border">
-        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-sm">
-          <Anchor className="w-4 h-4 text-white" strokeWidth={2.5} />
-        </div>
-        <span className="font-semibold text-sm tracking-tight text-sidebar-foreground select-none">
-          hostpilot
+        <img src={appLogo} alt="Host Pilot Logo" className="w-7 h-7 object-contain select-none pointer-events-none" />
+        <span className="font-bold text-sm tracking-tight text-sidebar-foreground select-none">
+          Host Pilot
         </span>
       </div>
 

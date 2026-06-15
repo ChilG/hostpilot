@@ -1,5 +1,8 @@
+import { useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Bell, Search } from "lucide-react";
+import { useAppStore } from "@/store/AppStore";
+import { NotificationCenter } from "./NotificationCenter";
 
 interface TopbarProps {
   title: string;
@@ -12,6 +15,11 @@ async function startDrag() {
 }
 
 export function Topbar({ title, subtitle, actions }: TopbarProps) {
+  const { notifications } = useAppStore();
+  const [notifOpen, setNotifOpen] = useState(false);
+
+  const unreadCount = notifications.filter((n) => n.unread).length;
+
   return (
     <header
       onMouseDown={startDrag}
@@ -31,13 +39,28 @@ export function Topbar({ title, subtitle, actions }: TopbarProps) {
         onMouseDown={(e) => e.stopPropagation()}
       >
         {actions}
-        <button className="w-8 h-8 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-default">
+        <button 
+          onClick={() => window.dispatchEvent(new CustomEvent("open-command-palette"))}
+          className="w-8 h-8 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-default"
+        >
           <Search className="w-4 h-4" />
         </button>
-        <button className="w-8 h-8 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors relative cursor-default">
-          <Bell className="w-4 h-4" />
-          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-indigo-500" />
-        </button>
+        
+        {/* Bell Button & Dropdown Container */}
+        <div className="relative">
+          <button 
+            onClick={() => setNotifOpen(!notifOpen)}
+            className="w-8 h-8 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors relative cursor-default"
+          >
+            <Bell className="w-4 h-4" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1 min-w-3.5 h-3.5 px-0.5 rounded-full bg-indigo-500 text-[8px] font-bold text-white flex items-center justify-center border border-background">
+                {unreadCount}
+              </span>
+            )}
+          </button>
+          <NotificationCenter isOpen={notifOpen} onClose={() => setNotifOpen(false)} />
+        </div>
       </div>
     </header>
   );

@@ -11,6 +11,7 @@ const QUERY_SELECT_PORTS: &str = include_str!("../queries/select_ports.sql");
 const QUERY_SELECT_BACKUPS: &str = include_str!("../queries/select_backups.sql");
 const QUERY_SELECT_APP_STATE_ONBOARDED: &str = include_str!("../queries/select_app_state_onboarded.sql");
 const QUERY_SELECT_APP_STATE_SETTINGS: &str = include_str!("../queries/select_app_state_settings.sql");
+const QUERY_SELECT_APP_STATE_NOTIFICATIONS: &str = include_str!("../queries/select_app_state_notifications.sql");
 
 const QUERY_DELETE_ALL_PROFILE_ENTRIES: &str = include_str!("../queries/delete_all_profile_entries.sql");
 const QUERY_DELETE_ALL_PROFILES: &str = include_str!("../queries/delete_all_profiles.sql");
@@ -206,6 +207,14 @@ pub fn load_config_from_db(app_handle: &tauri::AppHandle) -> Result<AppConfig, S
         Err(rusqlite::Error::QueryReturnedNoRows) => None,
         Err(e) => return Err(e.to_string()),
     };
+
+    let mut stmt = conn.prepare(QUERY_SELECT_APP_STATE_NOTIFICATIONS)
+        .map_err(|e| e.to_string())?;
+    let notifications = match stmt.query_row([], |row| row.get::<_, String>(0)) {
+        Ok(val) => serde_json::from_str::<Vec<crate::config::AppNotification>>(&val).unwrap_or_default(),
+        Err(rusqlite::Error::QueryReturnedNoRows) => Vec::new(),
+        Err(e) => return Err(e.to_string()),
+    };
     
     Ok(AppConfig {
         hosts,
@@ -215,6 +224,7 @@ pub fn load_config_from_db(app_handle: &tauri::AppHandle) -> Result<AppConfig, S
         backups,
         onboarded,
         settings,
+        notifications,
     })
 }
 
@@ -318,6 +328,13 @@ pub fn save_config_to_db(app_handle: &tauri::AppHandle, config: &AppConfig) -> R
                 params!["settings", settings_json],
             ).map_err(|e| format!("Failed to insert settings: {}", e))?;
         }
+    }
+
+    if let Ok(notifications_json) = serde_json::to_string(&config.notifications) {
+        tx.execute(
+            QUERY_INSERT_APP_STATE,
+            params!["notifications", notifications_json],
+        ).map_err(|e| format!("Failed to insert notifications: {}", e))?;
     }
     
     tx.commit().map_err(|e| format!("Failed to commit transaction: {}", e))?;

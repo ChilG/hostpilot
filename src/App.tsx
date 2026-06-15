@@ -13,6 +13,7 @@ import { AppStoreProvider, useAppStore } from "@/store/AppStore";
 import { Toaster } from "@/components/ui/sonner";
 import { invoke } from "@tauri-apps/api/core";
 import { OnboardingModal } from "@/components/layout/OnboardingModal";
+import { CommandPalette } from "@/components/layout/CommandPalette";
 
 const pageMap: Record<Page, React.ComponentType> = {
   dashboard: DashboardPage,
@@ -30,12 +31,32 @@ function AppContent() {
   const [page, setPage] = useState<Page>("dashboard");
   const { loading, onboarded } = useAppStore();
   const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !onboarded) {
       setOnboardingOpen(true);
     }
   }, [loading, onboarded]);
+
+  // Handle Command Palette triggers (keyboard + custom event)
+  useEffect(() => {
+    const handleOpen = () => setCommandPaletteOpen(true);
+    window.addEventListener("open-command-palette", handleOpen);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setCommandPaletteOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("open-command-palette", handleOpen);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   const PageComponent = pageMap[page];
 
@@ -46,6 +67,11 @@ function AppContent() {
         <PageComponent />
       </main>
       <OnboardingModal open={onboardingOpen} onOpenChange={setOnboardingOpen} />
+      <CommandPalette
+        open={commandPaletteOpen}
+        onOpenChange={setCommandPaletteOpen}
+        onNavigate={setPage}
+      />
     </div>
   );
 }
