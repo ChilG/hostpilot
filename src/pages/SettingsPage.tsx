@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Topbar } from "@/components/layout/Topbar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -68,6 +68,16 @@ export function SettingsPage() {
   const { settings, updateSettings } = useAppStore();
   const { t } = useTranslation();
   const [checking, setChecking] = useState(false);
+  const [appVersion, setAppVersion] = useState("v0.1.2");
+
+  useEffect(() => {
+    if (isTauri) {
+      import("@tauri-apps/api/app")
+        .then((app) => app.getVersion())
+        .then((ver) => setAppVersion(`v${ver}`))
+        .catch((err) => console.error("Failed to get app version:", err));
+    }
+  }, []);
 
   const handleCheckUpdates = async () => {
     if (!isTauri) {
@@ -331,7 +341,7 @@ export function SettingsPage() {
         >
           <SettingRow label={t("appVersion")} description="Current app version">
             <Badge className="bg-muted text-muted-foreground border-0 font-mono text-xs">
-              v0.1.0
+              {appVersion}
             </Badge>
           </SettingRow>
           <SettingRow
