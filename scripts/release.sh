@@ -143,32 +143,16 @@ echo -e "\n${GREEN}Version bump completed!${NC}"
 echo -e "${BLUE}--- GIT DIFF ---${NC}"
 git diff package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml
 
-# Prompt to commit and tag
+# Commit and tag locally
 echo -e "${BLUE}----------------${NC}"
-read -p "Commit changes and tag v$NEW_VERSION? (y/N): " commit_confirm
-if [[ "$commit_confirm" =~ ^[yY]$ ]]; then
-    git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml
-    if [ -f src-tauri/Cargo.lock ]; then
-        git add src-tauri/Cargo.lock
-    fi
-    
-    git commit -m "chore(release): v$NEW_VERSION"
-    git tag -a "v$NEW_VERSION" -m "v$NEW_VERSION"
-    echo -e "${GREEN}Created commit and tag v$NEW_VERSION.${NC}"
-    
-    # Prompt to push
-    read -p "Push commit and tag to origin master? (y/N): " push_confirm
-    if [[ "$push_confirm" =~ ^[yY]$ ]]; then
-        git push origin master --tags
-        echo -e "${GREEN}Pushed successfully! GitHub Action will now build the release.${NC}"
-    else
-        echo -e "${YELLOW}Changes committed and tagged locally. Remember to push later using:${NC}"
-        echo -e "  git push origin master --tags"
-    fi
-else
-    echo -e "${YELLOW}Aborted git commit and tag. Reverting file changes...${NC}"
-    git checkout package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml
-    if [ -f src-tauri/Cargo.lock ]; then
-        git checkout src-tauri/Cargo.lock
-    fi
+git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml
+if [ -f src-tauri/Cargo.lock ]; then
+    git add src-tauri/Cargo.lock
 fi
+
+git commit -m "chore(release): v$NEW_VERSION"
+git tag -a "v$NEW_VERSION" -m "v$NEW_VERSION"
+echo -e "${GREEN}Created commit and tag v$NEW_VERSION locally.${NC}"
+echo -e "${YELLOW}Remember to push later using:${NC}"
+echo -e "  git push origin master --tags"
+
