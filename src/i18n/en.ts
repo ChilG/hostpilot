@@ -78,6 +78,10 @@ export const en = {
   hostDeletedToast: 'Host "{domain}" deleted',
   hostCreated: "Host added",
   hostUpdated: "Host updated",
+  disableAll: "Disable All",
+  disableAllConfirm: "Disable All Hosts",
+  disableAllConfirmText: "Are you sure you want to disable all hosts? This will turn off all hosts mappings.",
+  allHostsDisabledToast: "All hosts disabled",
 
   // Groups Page
   addGroup: "Add Group",

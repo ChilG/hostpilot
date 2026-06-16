@@ -83,6 +83,7 @@ type AppStore = {
   addHost: (h: Omit<HostEntry, "id" | "createdAt" | "updatedAt">) => void;
   updateHost: (id: string, patch: Partial<HostEntry>) => void;
   deleteHost: (id: string) => void;
+  disableAllHosts: () => void;
 
   // Groups CRUD
   addGroup: (g: Omit<HostGroup, "id">) => void;

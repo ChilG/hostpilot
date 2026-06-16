@@ -18,7 +18,7 @@ import {
 import { useAppStore, type HostEntry } from "@/store/AppStore";
 import { HostFormDialog } from "@/components/hosts/HostFormDialog";
 import { useTranslation } from "@/i18n/translations";
-import { Plus, Search, Pencil, Trash2, Filter, Globe } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Filter, Globe, PowerOff } from "lucide-react";
 
 const sourceColors: Record<HostEntry["source"], string> = {
   manual: "bg-slate-500/15 text-slate-400",
@@ -26,7 +26,7 @@ const sourceColors: Record<HostEntry["source"], string> = {
 };
 
 export function HostsPage() {
-  const { hosts, groups, updateHost, deleteHost } = useAppStore();
+  const { hosts, groups, updateHost, deleteHost, disableAllHosts } = useAppStore();
   const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [filterGroup, setFilterGroup] = useState<string | null>(null);
@@ -36,6 +36,7 @@ export function HostsPage() {
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
   const [editTarget, setEditTarget] = useState<HostEntry | undefined>();
   const [deleteTarget, setDeleteTarget] = useState<HostEntry | undefined>();
+  const [disableAllConfirmOpen, setDisableAllConfirmOpen] = useState(false);
 
   const filtered = hosts.filter((h) => {
     const matchSearch =
@@ -73,14 +74,26 @@ export function HostsPage() {
         title={t("hosts")}
         subtitle={`${hosts.filter((h) => h.enabled).length} ${t("active")} / ${hosts.length} ${t("hosts")}`}
         actions={
-          <Button
-            size="sm"
-            className="bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5 h-8 text-xs"
-            onClick={openCreate}
-          >
-            <Plus className="w-3.5 h-3.5" />
-            {t("addHost")}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-destructive/30 hover:border-destructive hover:bg-destructive/10 text-destructive/90 hover:text-destructive gap-1.5 h-8 text-xs cursor-pointer"
+              onClick={() => setDisableAllConfirmOpen(true)}
+              disabled={!hosts.some((h) => h.enabled)}
+            >
+              <PowerOff className="w-3.5 h-3.5" />
+              {t("disableAll")}
+            </Button>
+            <Button
+              size="sm"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5 h-8 text-xs cursor-pointer"
+              onClick={openCreate}
+            >
+              <Plus className="w-3.5 h-3.5" />
+              {t("addHost")}
+            </Button>
+          </div>
         }
       />
 
@@ -245,6 +258,30 @@ export function HostsPage() {
               onClick={handleDelete}
             >
               {t("delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={disableAllConfirmOpen} onOpenChange={setDisableAllConfirmOpen}>
+        <AlertDialogContent className="dark">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("disableAllConfirm")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("disableAllConfirmText")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => {
+                disableAllHosts();
+                toast.success(t("allHostsDisabledToast"));
+                setDisableAllConfirmOpen(false);
+              }}
+            >
+              {t("confirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -78,6 +78,10 @@ export const th = {
   hostDeletedToast: 'ลบโฮสต์ "{domain}" เรียบร้อยแล้ว',
   hostCreated: "เพิ่มโฮสต์เรียบร้อยแล้ว",
   hostUpdated: "แก้ไขโฮสต์เรียบร้อยแล้ว",
+  disableAll: "ปิดใช้งานทั้งหมด",
+  disableAllConfirm: "ปิดใช้งานโฮสต์ทั้งหมด",
+  disableAllConfirmText: "คุณแน่ใจหรือไม่ว่าต้องการปิดใช้งานโฮสต์ทั้งหมด? การดำเนินการนี้จะทำการปิดการเชื่อมต่อหรือการใช้งานโฮสต์ทั้งหมดที่มีอยู่",
+  allHostsDisabledToast: "ปิดใช้งานโฮสต์ทั้งหมดเรียบร้อยแล้ว",
 
   // Groups Page
   addGroup: "สร้างกลุ่มใหม่",
