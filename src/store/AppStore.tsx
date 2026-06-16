@@ -112,6 +112,19 @@ type AppStore = {
   addNotification: (title: string, description: string, type?: "info" | "success" | "warning" | "error") => void;
   clearNotifications: () => void;
   markAllNotificationsAsRead: () => void;
+
+  // Import / Export
+  importConfig: (config: {
+    hosts?: any[];
+    groups?: any[];
+    profiles?: any[];
+    ports?: any[];
+  }) => {
+    hostsImported: number;
+    groupsImported: number;
+    profilesImported: number;
+    portsImported: number;
+  };
 };
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -321,6 +334,15 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     addNotification("Host Deleted", `Domain "${domain}" has been removed.`, "info");
   };
 
+  const disableAllHosts = () => {
+    const enabledCount = hosts.filter((h) => h.enabled).length;
+    if (enabledCount === 0) return;
+    setHosts((prev) =>
+      prev.map((h) => (h.enabled ? { ...h, enabled: false, updatedAt: now() } : h))
+    );
+    addNotification("All Hosts Disabled", `Disabled ${enabledCount} host mappings.`, "info");
+  };
+
   // ── Groups ──
   const addGroup = (g: Omit<HostGroup, "id">) =>
     setGroups((prev) => [...prev, { ...g, id: uid() }]);
@@ -523,6 +545,183 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  const importConfig = (configData: {
+    hosts?: any[];
+    groups?: any[];
+    profiles?: any[];
+    ports?: any[];
+  }) => {
+    const groupsData = configData.groups || [];
+    const hostsData = configData.hosts || [];
+    const profilesData = configData.profiles || [];
+    const portsData = configData.ports || [];
+
+    let groupsImported = 0;
+    let hostsImported = 0;
+    let profilesImported = 0;
+    let portsImported = 0;
+
+    const groupOldToNewId: Record<string, string> = {};
+    const hostOldToNewId: Record<string, string> = {};
+
+    // 1. Merge Groups
+    let nextGroups = [...groups];
+    groupsData.forEach((g) => {
+      if (!g.name) return;
+      const existing = nextGroups.find((eg) => eg.name.toLowerCase() === g.name.toLowerCase());
+      if (existing) {
+        groupOldToNewId[g.id || g.name] = existing.id;
+      } else {
+        const newId = uid();
+        nextGroups.push({
+          id: newId,
+          name: g.name,
+          color: g.color || "gray",
+          description: g.description || null,
+        });
+        groupOldToNewId[g.id || g.name] = newId;
+        groupsImported++;
+      }
+    });
+
+    // 2. Merge Hosts
+    let nextHosts = [...hosts];
+    hostsData.forEach((h) => {
+      const domain = h.domain || h.name;
+      if (!domain || !h.ip) return;
+      const existing = nextHosts.find((eh) => eh.domain.toLowerCase() === domain.toLowerCase());
+      if (existing) {
+        hostOldToNewId[h.id || h.name] = existing.id;
+      } else {
+        const newId = uid();
+        const oldGroupId = h.groupId || h.group_id;
+        let newGroupId: string | undefined = undefined;
+
+        if (oldGroupId) {
+          if (groupOldToNewId[oldGroupId]) {
+            newGroupId = groupOldToNewId[oldGroupId];
+          } else {
+            // Direct ID match
+            const directMatch = nextGroups.find((eg) => eg.id === oldGroupId);
+            if (directMatch) {
+              newGroupId = directMatch.id;
+            }
+          }
+        }
+
+        if (!newGroupId && h.group) {
+          // Look up by group name
+          const matchedGroup = nextGroups.find(
+            (eg) => eg.name.toLowerCase() === h.group.toLowerCase()
+          );
+          if (matchedGroup) {
+            newGroupId = matchedGroup.id;
+          }
+        }
+
+        nextHosts.push({
+          id: newId,
+          domain,
+          ip: h.ip,
+          enabled: h.enabled !== false,
+          groupId: newGroupId,
+          description: h.description || "Imported from config JSON",
+          source: "imported",
+          createdAt: h.createdAt || now(),
+          updatedAt: now(),
+        });
+        hostOldToNewId[h.id || h.name] = newId;
+        hostsImported++;
+      }
+    });
+
+    // 3. Merge Profiles
+    let nextProfiles = [...profiles];
+    profilesData.forEach((p) => {
+      if (!p.name) return;
+      const existing = nextProfiles.find((ep) => ep.name.toLowerCase() === p.name.toLowerCase());
+      const entryIds = p.entryIds || p.entry_ids || [];
+      const importedMappedIds = entryIds
+        .map((oldId: string) => {
+          if (hostOldToNewId[oldId]) {
+            return hostOldToNewId[oldId];
+          }
+          // Direct ID match
+          const directMatch = nextHosts.find((eh) => eh.id === oldId);
+          if (directMatch) {
+            return directMatch.id;
+          }
+          // Lookup by domain/name match
+          const nameMatch = nextHosts.find((eh) => eh.domain.toLowerCase() === oldId.toLowerCase());
+          if (nameMatch) {
+            return nameMatch.id;
+          }
+          return null;
+        })
+        .filter(Boolean) as string[];
+
+      if (existing) {
+        const combinedIds = Array.from(new Set([...existing.entryIds, ...importedMappedIds]));
+        nextProfiles = nextProfiles.map((ep) =>
+          ep.id === existing.id ? { ...existing, entryIds: combinedIds, updatedAt: now() } : ep
+        );
+      } else {
+        const newId = uid();
+        nextProfiles.push({
+          id: newId,
+          name: p.name,
+          description: p.description || null,
+          entryIds: importedMappedIds,
+          active: false,
+          favorite: p.favorite === true,
+          createdAt: p.createdAt || now(),
+          updatedAt: now(),
+        });
+        profilesImported++;
+      }
+    });
+
+    // 4. Merge Ports
+    let nextPorts = [...ports];
+    portsData.forEach((p) => {
+      if (!p.domain || !p.port) return;
+      const existing = nextPorts.find(
+        (ep) => ep.domain.toLowerCase() === p.domain.toLowerCase() && ep.port === Number(p.port)
+      );
+      if (!existing) {
+        nextPorts.push({
+          id: uid(),
+          domain: p.domain,
+          targetHost: p.targetHost || p.target_host || "127.0.0.1",
+          port: Number(p.port),
+          protocol: p.protocol === "https" ? "https" : "http",
+          enabled: p.enabled !== false,
+          status: p.status === "running" || p.status === "stopped" || p.status === "unknown" ? p.status : "stopped",
+        });
+        portsImported++;
+      }
+    });
+
+    // Apply updates synchronously if any changes occurred
+    if (groupsImported > 0) setGroups(nextGroups);
+    if (hostsImported > 0) setHosts(nextHosts);
+    if (profilesImported > 0) setProfiles(nextProfiles);
+    if (portsImported > 0) setPorts(nextPorts);
+
+    addNotification(
+      "Configuration Mapped & Imported",
+      `Mapped and merged config: ${hostsImported} hosts, ${groupsImported} groups, ${profilesImported} profiles, ${portsImported} port rules.`,
+      "success"
+    );
+
+    return {
+      hostsImported,
+      groupsImported,
+      profilesImported,
+      portsImported,
+    };
+  };
+
   const setOnboardedComplete = () => setOnboarded(true);
 
   return (
@@ -541,6 +740,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         addHost,
         updateHost,
         deleteHost,
+        disableAllHosts,
         addGroup,
         updateGroup,
         deleteGroup,
@@ -560,6 +760,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         addNotification,
         clearNotifications,
         markAllNotificationsAsRead,
+        importConfig,
       }}
     >
       {children}

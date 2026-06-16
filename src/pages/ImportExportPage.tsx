@@ -18,7 +18,7 @@ type Tab = "import" | "export";
 
 
 export function ImportExportPage() {
-  const { hosts, groups, profiles, ports, addHost, addPort, addGroup } = useAppStore();
+  const { hosts, groups, profiles, ports, importConfig } = useAppStore();
   const { t } = useTranslation();
 
   const [tab, setTab] = useState<Tab>("import");
@@ -122,58 +122,18 @@ export function ImportExportPage() {
 
   const triggerJsonImport = () => {
     if (!parsedJsonConfig) return;
-    const hostsData: any[] = parsedJsonConfig.hosts || parsedJsonConfig.entries || [];
-    const groupsData: any[] = parsedJsonConfig.groups || [];
-    const portsData: any[] = parsedJsonConfig.ports || [];
-
-    let hostsImported = 0;
-    let groupsImported = 0;
-    let portsImported = 0;
-
-    // 1. Groups
-    groupsData.forEach((g) => {
-      if (g.name && !groups.some((existing) => existing.name === g.name)) {
-        addGroup({ name: g.name, color: g.color || "gray", description: g.description });
-        groupsImported++;
-      }
-    });
-
-    // 2. Hosts
-    hostsData.forEach((h) => {
-      const domain = h.domain || h.name;
-      if (domain && h.ip && !hosts.some((existing) => existing.domain === domain)) {
-        const groupMatch = groups.find((existing) => existing.name === h.group);
-        addHost({
-          domain,
-          ip: h.ip,
-          enabled: h.enabled !== false,
-          description: h.description || "Imported from config JSON",
-          groupId: groupMatch?.id,
-          source: "imported",
-        });
-        hostsImported++;
-      }
-    });
-
-    // 3. Ports
-    portsData.forEach((p) => {
-      if (p.domain && p.port) {
-        addPort({
-          domain: p.domain,
-          targetHost: p.targetHost || "127.0.0.1",
-          port: Number(p.port),
-          protocol: p.protocol === "https" ? "https" : "http",
-          enabled: p.enabled !== false,
-          status: p.status === "running" || p.status === "stopped" || p.status === "unknown" ? p.status : "stopped",
-        });
-        portsImported++;
-      }
-    });
-
-    toast.success(t("importSuccessToast"), {
-      description: t("importSuccessDetail", { hosts: hostsImported, groups: groupsImported, ports: portsImported }),
-    });
-    setJsonImportStep("done");
+    try {
+      const { hostsImported, groupsImported, portsImported } = importConfig(parsedJsonConfig);
+      toast.success(t("importSuccessToast"), {
+        description: t("importSuccessDetail", { hosts: hostsImported, groups: groupsImported, ports: portsImported }),
+      });
+      setJsonImportStep("done");
+    } catch (err) {
+      console.error("Import failed:", err);
+      toast.error("Import failed", {
+        description: String(err),
+      });
+    }
   };
 
   return (
