@@ -54,7 +54,7 @@ export const defaultSettings: AppSettings = {
   previewBeforeApply: true,
   backupBeforeWrite: true,
   validateBeforeWrite: true,
-  backupDirectory: "~/.hostpilot/backups",
+  backupDirectory: "",
   keepBackupsCount: 10,
   autoCleanupBackups: true,
   showApplyNotifications: true,
@@ -157,6 +157,14 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
             initialSettings = { ...initialSettings, hostsPath: defaultPath };
           } catch (e) {
             console.error("Failed to load default hosts path:", e);
+          }
+          try {
+            const defaultBackupPath = await invoke<string>("get_default_backups_path");
+            if (!initialSettings.backupDirectory || initialSettings.backupDirectory === "~/.hostpilot/backups") {
+              initialSettings = { ...initialSettings, backupDirectory: defaultBackupPath };
+            }
+          } catch (e) {
+            console.error("Failed to load default backups path:", e);
           }
           if (!config.settings) {
             try {

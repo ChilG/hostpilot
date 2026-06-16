@@ -131,6 +131,17 @@ fn get_default_hosts_path() -> String {
 }
 
 #[tauri::command]
+fn get_default_backups_path(app_handle: tauri::AppHandle) -> Result<String, String> {
+    use tauri::Manager;
+    let app_dir = app_handle
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data directory: {}", e))?;
+    let backup_dir = app_dir.join("backups");
+    Ok(backup_dir.to_string_lossy().to_string())
+}
+
+#[tauri::command]
 fn select_backup_directory() -> Result<Option<String>, String> {
     let folder = rfd::FileDialog::new()
         .set_title("Select Backup Directory")
@@ -169,9 +180,10 @@ pub fn run() {
             reveal_in_finder,
             open_in_browser,
             get_default_hosts_path,
+            get_default_backups_path,
             select_backup_directory,
             get_system_locale,
-            relaunch_app,
+            relaunch_app
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
