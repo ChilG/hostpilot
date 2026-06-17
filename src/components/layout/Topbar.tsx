@@ -23,7 +23,7 @@ export function Topbar({ title, subtitle, actions }: TopbarProps) {
   return (
     <header
       onMouseDown={startDrag}
-      className="h-14 flex-shrink-0 flex items-center justify-between px-6 border-b border-border bg-background/80 backdrop-blur-sm select-none cursor-default relative z-20"
+      className="h-14 flex-shrink-0 flex items-center justify-between px-6 border-b border-border bg-background/80 backdrop-blur-sm select-none cursor-default relative z-40"
     >
       {/* Title — triggers drag */}
       <div className="flex flex-col justify-center flex-1 min-w-0 pr-4">
