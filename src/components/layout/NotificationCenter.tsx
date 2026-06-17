@@ -1,6 +1,7 @@
 import { useAppStore } from "@/store/AppStore";
 import { Bell, Check, Trash2, CheckCheck, AlertTriangle, AlertCircle, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/i18n/translations";
 
 interface NotificationCenterProps {
   isOpen: boolean;
@@ -9,6 +10,7 @@ interface NotificationCenterProps {
 
 export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps) {
   const { notifications, clearNotifications, markAllNotificationsAsRead } = useAppStore();
+  const { t } = useTranslation();
 
   if (!isOpen) return null;
 
@@ -22,9 +24,9 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
       const diffMins = Math.floor(diffSecs / 60);
       const diffHours = Math.floor(diffMins / 60);
 
-      if (diffSecs < 60) return "Just now";
-      if (diffMins < 60) return `${diffMins}m ago`;
-      if (diffHours < 24) return `${diffHours}h ago`;
+      if (diffSecs < 60) return t("timeJustNow");
+      if (diffMins < 60) return t("timeMMinAgo", { count: diffMins });
+      if (diffHours < 24) return t("timeHHourAgo", { count: diffHours });
       
       return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
     } catch (e) {
@@ -45,27 +47,27 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
         <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/20">
           <span className="font-semibold text-xs text-foreground/90 flex items-center gap-1.5">
             <Bell className="w-3.5 h-3.5" />
-            Notifications
+            {t("notifications")}
           </span>
           <div className="flex items-center gap-2">
             {hasUnread && (
               <button 
                 onClick={markAllNotificationsAsRead}
                 className="text-[10px] text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-1 transition-colors"
-                title="Mark all as read"
+                title={t("markAllAsRead")}
               >
                 <CheckCheck className="w-3 h-3" />
-                Read
+                {t("active")}
               </button>
             )}
             {notifications.length > 0 && (
               <button 
                 onClick={clearNotifications}
                 className="text-[10px] text-muted-foreground hover:text-destructive font-medium flex items-center gap-1 transition-colors"
-                title="Clear all"
+                title={t("clearAll")}
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                Clear
+                {t("clear")}
               </button>
             )}
           </div>
@@ -76,7 +78,7 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
           {notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
               <Bell className="w-8 h-8 text-muted-foreground/30 mb-2" />
-              <p className="text-xs text-muted-foreground">No recent notifications</p>
+              <p className="text-xs text-muted-foreground">{t("noRecentNotifications")}</p>
             </div>
           ) : (
             notifications.map((notif) => (

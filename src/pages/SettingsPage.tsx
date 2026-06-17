@@ -81,12 +81,12 @@ export function SettingsPage() {
 
   const handleCheckUpdates = async () => {
     if (!isTauri) {
-      toast.info("Update check is only available in the desktop application.");
+      toast.info(t("updateCheckOnlyDesktop"));
       return;
     }
 
     setChecking(true);
-    const toastId = toast.loading("Checking for updates...");
+    const toastId = toast.loading(t("checkingForUpdates"));
     try {
       const { check } = await import("@tauri-apps/plugin-updater");
       const update = await check();
@@ -94,14 +94,14 @@ export function SettingsPage() {
       if (update && update.available) {
         toast.dismiss(toastId);
         
-        toast.info(`Update v${update.version} is available!`, {
-          description: "Downloading and installing update...",
+        toast.info(t("updateAvailable", { version: update.version }), {
+          description: t("downloadingUpdate"),
           duration: 5000,
         });
 
         await update.downloadAndInstall();
 
-        toast.success("Update installed! Relaunching application...", {
+        toast.success(t("updateInstalledRelaunching"), {
           duration: 3000,
         });
 
@@ -115,12 +115,12 @@ export function SettingsPage() {
 
       } else {
         toast.dismiss(toastId);
-        toast.success("You are running the latest version!");
+        toast.success(t("latestVersionAlready"));
       }
     } catch (err) {
       console.error("Failed to check for updates:", err);
       toast.dismiss(toastId);
-      toast.error("Failed to check for updates.");
+      toast.error(t("failedCheckUpdates"));
     } finally {
       setChecking(false);
     }
@@ -339,7 +339,7 @@ export function SettingsPage() {
           icon={<Info className="w-4 h-4 text-muted-foreground" />}
           title={t("aboutSettings")}
         >
-          <SettingRow label={t("appVersion")} description="Current app version">
+          <SettingRow label={t("appVersion")} description={t("currentAppVersion")}>
             <Badge className="bg-muted text-muted-foreground border-0 font-mono text-xs">
               {appVersion}
             </Badge>
@@ -355,7 +355,7 @@ export function SettingsPage() {
               onClick={handleCheckUpdates}
               disabled={checking}
             >
-              {checking ? "Checking..." : t("checkNow")}
+              {checking ? t("checking") : t("checkNow")}
             </Button>
           </SettingRow>
           <div className="py-4">

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
+import { translations } from "@/i18n/translations";
 import {
   demoHosts,
   demoGroups,
@@ -178,6 +179,18 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   const [proxyRules, setProxyRules] = useState<ProxyRule[]>([]);
   const [proxyRunningPort, setProxyRunningPort] = useState<number | null>(null);
 
+  const t = (key: string, params?: Record<string, string | number>): string => {
+    const lang = settings.language || "en";
+    const dict = translations[lang] || translations.en;
+    let text = dict[key] || translations.en[key] || key;
+    if (params) {
+      Object.entries(params).forEach(([k, v]) => {
+        text = text.replace(new RegExp(`{${k}}`, "g"), String(v));
+      });
+    }
+    return text;
+  };
+
   // ─── Initialization ────────────────────────────────────────────────────────
 
   useEffect(() => {
@@ -249,21 +262,27 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
             setPorts(demoPorts);
             setBackups(demoBackups);
             setOnboarded(false);
+            let initialSettings = defaultSettings;
+            let lang: "en" | "th" = "en";
+            if (typeof navigator !== "undefined" && navigator.language?.toLowerCase().startsWith("th")) {
+              initialSettings = { ...defaultSettings, language: "th" };
+              lang = "th";
+            }
+            const initialTitle = lang === "th" ? "ยินดีต้อนรับสู่ Host Pilot!" : "Welcome to Host Pilot!";
+            const initialDesc = lang === "th" 
+              ? "ติดตั้งโปรแกรมเรียบร้อยแล้ว พร้อมให้คุณจัดการโฮสต์และพอร์ตอย่างง่ายดาย" 
+              : "App successfully installed. Ready to manage hosts and ports.";
+
             setNotifications([
               {
                 id: "init_notif",
-                title: "Welcome to Host Pilot!",
-                description: "App successfully installed. Ready to manage hosts and ports.",
+                title: initialTitle,
+                description: initialDesc,
                 type: "success",
                 timestamp: new Date().toISOString(),
                 unread: true,
               }
             ]);
-
-            let initialSettings = defaultSettings;
-            if (typeof navigator !== "undefined" && navigator.language?.toLowerCase().startsWith("th")) {
-              initialSettings = { ...defaultSettings, language: "th" };
-            }
             setSettings(initialSettings);
           }
         }
@@ -342,7 +361,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       ...prev,
       { ...h, id: newId, createdAt: now(), updatedAt: now() },
     ]);
-    addNotification("Host Entry Created", `Added domain "${h.domain}".`, "success");
+    addNotification(t("notif.hostCreatedTitle"), t("notif.hostCreatedDesc", { domain: h.domain }), "success");
   };
 
   const updateHost = (id: string, patch: Partial<HostEntry>) =>
@@ -351,8 +370,8 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         if (h.id === id) {
           if (patch.enabled !== undefined && patch.enabled !== h.enabled) {
             addNotification(
-              patch.enabled ? "Host Enabled" : "Host Disabled",
-              `Domain "${h.domain}" is now ${patch.enabled ? "enabled" : "disabled"}.`,
+              patch.enabled ? t("notif.hostEnabledTitle") : t("notif.hostDisabledTitle"),
+              t("notif.hostStatusDesc", { domain: h.domain, status: patch.enabled ? t("statusEnabled") : t("statusDisabled") }),
               "info"
             );
           }
@@ -369,7 +388,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     setProfiles((prev) =>
       prev.map((p) => ({ ...p, entryIds: p.entryIds.filter((e) => e !== id) }))
     );
-    addNotification("Host Deleted", `Domain "${domain}" has been removed.`, "info");
+    addNotification(t("notif.hostDeletedTitle"), t("notif.hostDeletedDesc", { domain }), "info");
   };
 
   const disableAllHosts = () => {
@@ -378,7 +397,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     setHosts((prev) =>
       prev.map((h) => (h.enabled ? { ...h, enabled: false, updatedAt: now() } : h))
     );
-    addNotification("All Hosts Disabled", `Disabled ${enabledCount} host mappings.`, "info");
+    addNotification(t("notif.allHostsDisabledTitle"), t("notif.allHostsDisabledDesc", { count: enabledCount }), "info");
   };
 
   // ── Groups ──
@@ -441,7 +460,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     setProfiles((prev) =>
       prev.map((p) => ({ ...p, active: p.id === id, updatedAt: now() }))
     );
-    addNotification("Profile Activated", `Profile "${name}" is now active.`, "success");
+    addNotification(t("notif.profileActivatedTitle"), t("notif.profileActivatedDesc", { name }), "success");
   };
 
   // ── Ports ──
@@ -472,13 +491,13 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
             const newStatus = isOpen ? "running" : "stopped";
             if (oldStatus === "running" && newStatus === "stopped") {
               addNotification(
-                "Port Down Alert",
-                `Service "${p.domain}:${p.port}" has stopped running.`,
+                t("notif.portDownTitle"),
+                t("notif.portDownDesc", { domain: p.domain, port: p.port }),
                 "error"
               );
               if (settings.portStatusAlerts) {
-                toast.error(`Port Down: ${p.domain}:${p.port}`, {
-                  description: `Connection to target host ${p.targetHost} has failed.`,
+                toast.error(t("notif.portDownToastTitle", { domain: p.domain, port: p.port }), {
+                  description: t("notif.portDownToastDesc", { host: p.targetHost }),
                 });
               }
             }
@@ -520,15 +539,15 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         setProxyRunningPort(port);
       }
       addNotification(
-        "Proxy Server Started",
-        `Reverse proxy is running on port ${port}.`,
+        t("notif.proxyStartedTitle"),
+        t("notif.proxyStartedDesc", { port }),
         "success"
       );
     } catch (e) {
       console.error("Failed to start proxy:", e);
       addNotification(
-        "Proxy Server Error",
-        `Failed to start proxy on port ${port}: ${e}`,
+        t("notif.proxyStartErrorTitle"),
+        t("notif.proxyStartErrorDesc", { port, error: String(e) }),
         "error"
       );
       throw e;
@@ -542,8 +561,8 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       }
       setProxyRunningPort(null);
       addNotification(
-        "Proxy Server Stopped",
-        `Reverse proxy has been shut down.`,
+        t("notif.proxyStoppedTitle"),
+        t("notif.proxyStoppedDesc"),
         "info"
       );
     } catch (e) {
@@ -602,7 +621,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       return next;
     });
 
-    addNotification("Backup Created", `Backup for "${reason}" completed successfully.`, "success");
+    addNotification(t("notif.backupCreatedTitle"), t("notif.backupCreatedDesc", { reason }), "success");
     return record;
   };
 
@@ -622,7 +641,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     if (isTauri) {
       await invoke("restore_backup", { backupId: id });
     }
-    addNotification("Backup Restored", `Restored hosts state from "${reason}".`, "success");
+    addNotification(t("notif.backupRestoredTitle"), t("notif.backupRestoredDesc", { reason }), "success");
   };
 
   const addNotification = (
@@ -734,7 +753,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
           ip: h.ip,
           enabled: h.enabled !== false,
           groupId: newGroupId,
-          description: h.description || "Imported from config JSON",
+          description: h.description || t("notif.importedJsonDesc"),
           source: "imported",
           createdAt: h.createdAt || now(),
           updatedAt: now(),

@@ -71,11 +71,7 @@ export function ProfilesPage() {
   const handleDelete = () => {
     if (!deleteTarget) return;
     deleteProfile(deleteTarget.id);
-    toast.success(
-      t("locale") === "th"
-        ? `ลบโปรไฟล์ "${deleteTarget.name}" เรียบร้อยแล้ว`
-        : `Profile "${deleteTarget.name}" deleted`
-    );
+    toast.success(t("profileDeleted", { name: deleteTarget.name }));
     setDeleteTarget(undefined);
   };
 
@@ -118,7 +114,7 @@ export function ProfilesPage() {
               <div>
                 <p className="text-lg font-bold">{profile.entryIds.length}</p>
                 <p className="text-[10px] text-muted-foreground">
-                  {t("locale") === "th" ? "โฮสต์เปิดใช้งานอยู่" : "hosts enabled"}
+                  {t("hostsEnabledCount")}
                 </p>
               </div>
               <Button
@@ -127,12 +123,10 @@ export function ProfilesPage() {
                 className="h-8 text-xs gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10"
                 onClick={() => {
                   updateProfile(profile.id, { active: false });
-                  toast.success(
-                    t("locale") === "th" ? "ปิดการทำงานโปรไฟล์สำเร็จ" : "Profile deactivated"
-                  );
+                  toast.success(t("profileDeactivated"));
                 }}
               >
-                {t("locale") === "th" ? "ปิดใช้งาน" : "Deactivate"}
+                {t("deactivate")}
               </Button>
             </div>
           </div>
@@ -193,7 +187,7 @@ export function ProfilesPage() {
                     </div>
                     {entries.length > 4 && (
                       <p className="text-[10px] text-muted-foreground text-center pt-2">
-                        {t("locale") === "th" ? `+ อีก ${entries.length - 4} โฮสต์` : `+ ${entries.length - 4} more hosts`}
+                        {t("moreHostsCount", { count: entries.length - 4 })}
                       </p>
                     )}
                     {entries.length === 0 && (
@@ -209,13 +203,11 @@ export function ProfilesPage() {
                       className="flex-1 h-8 text-xs bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5"
                       onClick={() => {
                         activateProfile(profile.id);
-                        toast.success(
-                          t("locale") === "th" ? `เปิดใช้งานโปรไฟล์ "${profile.name}"` : `Profile "${profile.name}" activated`
-                        );
+                        toast.success(t("profileActivated", { name: profile.name }));
                       }}
                     >
                       <Zap className="w-3 h-3" />
-                      {t("locale") === "th" ? "ใช้งาน" : "Activate"}
+                      {t("activate")}
                     </Button>
                     <Button
                       variant="outline"
@@ -224,9 +216,7 @@ export function ProfilesPage() {
                       title={t("duplicateProfile")}
                       onClick={() => {
                         duplicateProfile(profile.id);
-                        toast.success(
-                          t("locale") === "th" ? `ทำสำเนาโปรไฟล์เป็น "Copy of ${profile.name}"` : `Profile duplicated as "Copy of ${profile.name}"`
-                        );
+                        toast.success(t("profileDuplicated", { name: profile.name }));
                       }}
                     >
                       <Copy className="w-3.5 h-3.5" />
@@ -238,9 +228,7 @@ export function ProfilesPage() {
                       title="Export JSON"
                       onClick={() => {
                         exportProfile(profile, hosts);
-                        toast.success(
-                          t("locale") === "th" ? "ส่งออกโปรไฟล์เรียบร้อยแล้ว" : "Profile exported"
-                        );
+                        toast.success(t("profileExported"));
                       }}
                     >
                       <Download className="w-3.5 h-3.5" />
@@ -287,7 +275,7 @@ export function ProfilesPage() {
         mode={formMode}
         profile={editTarget}
         onSave={() =>
-          toast.success(formMode === "create" ? "Profile created" : "Profile updated")
+          toast.success(formMode === "create" ? t("profileCreated") : t("profileUpdated"))
         }
       />
 

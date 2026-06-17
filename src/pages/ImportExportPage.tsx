@@ -65,7 +65,7 @@ export function ImportExportPage() {
         }
       } catch (err) {
         console.error("Export failed:", err);
-        toast.error("Export failed", {
+        toast.error(t("exportFailed"), {
           description: String(err),
         });
       }
@@ -129,7 +129,7 @@ export function ImportExportPage() {
       setJsonImportStep("done");
     } catch (err) {
       console.error("Import failed:", err);
-      toast.error("Import failed", {
+      toast.error(t("importFailed"), {
         description: String(err),
       });
     }

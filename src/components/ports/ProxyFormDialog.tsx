@@ -175,7 +175,7 @@ export function ProxyFormDialog({
 
           {/* Path Prefix */}
           <div className="space-y-1">
-            <Label htmlFor="pathPrefix">Path Prefix</Label>
+            <Label htmlFor="pathPrefix">{t("pathPrefix")}</Label>
             <Input
               id="pathPrefix"
               value={pathPrefix}

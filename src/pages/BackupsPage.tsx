@@ -37,12 +37,12 @@ export function BackupsPage() {
     if (!restoreTarget) return;
     try {
       await restoreBackup(restoreTarget.id);
-      toast.success("Restore completed successfully!", {
-        description: `Hosts file restored to backup from ${new Date(restoreTarget.createdAt).toLocaleString()}`,
+      toast.success(t("restoreSuccess"), {
+        description: t("restoreSuccessDetail", { date: new Date(restoreTarget.createdAt).toLocaleString() }),
       });
     } catch (e) {
       console.error("Failed to restore backup:", e);
-      toast.error("Restore failed", {
+      toast.error(t("restoreFailed"), {
         description: String(e),
       });
     } finally {
@@ -199,7 +199,7 @@ export function BackupsPage() {
       <BackupCreateDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
-        onSave={() => toast.success("Backup created")}
+        onSave={() => toast.success(t("backupCreated"))}
       />
 
       {/* Delete confirm */}

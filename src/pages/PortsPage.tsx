@@ -116,7 +116,7 @@ export function PortsPage() {
 
   const handleOpen = async (port: PortRule) => {
     const url = `${port.protocol}://${port.targetHost}:${port.port}`;
-    toast.info(`Opening ${url}`, { description: `→ ${port.domain}` });
+    toast.info(t("openingUrl", { url }), { description: t("toDomain", { domain: port.domain }) });
     try {
       await invoke("open_in_browser", { url });
     } catch (e) {
@@ -151,11 +151,11 @@ export function PortsPage() {
         await stopProxyServer();
         toast.success(t("proxyStopSuccess"));
       } catch (e) {
-        toast.error(`Failed to stop proxy: ${e}`);
+        toast.error(t("failedToStopProxy", { error: String(e) }));
       }
     } else {
       if (proxyPortInput <= 0 || proxyPortInput > 65535) {
-        toast.error("Invalid port number");
+        toast.error(t("invalidPortNumber"));
         return;
       }
       setIsStarting(true);
@@ -244,7 +244,7 @@ export function PortsPage() {
             <TabsTrigger value="proxy" className="text-xs font-semibold px-4 cursor-pointer gap-1.5 flex items-center">
               {t("reverseProxy")}
               <Badge className="bg-amber-500/10 text-amber-500 hover:bg-amber-500/10 border border-amber-500/20 text-[9px] px-1 py-0 font-normal rounded-md">
-                Experimental
+                {t("experimental")}
               </Badge>
             </TabsTrigger>
           </TabsList>
@@ -381,7 +381,7 @@ export function PortsPage() {
 
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2">
-                    <Label htmlFor="proxyPort" className="text-xs text-muted-foreground font-mono">Port:</Label>
+                    <Label htmlFor="proxyPort" className="text-xs text-muted-foreground font-mono">{t("portNumber")}:</Label>
                     <Input
                       id="proxyPort"
                       type="number"
@@ -469,7 +469,7 @@ export function PortsPage() {
                                 : "bg-purple-500/10 text-purple-400"
                             }`}
                           >
-                            {rule.targetType === "local" ? "Local Port" : "External Proxy"}
+                            {rule.targetType === "local" ? t("localPort") : t("externalProxy")}
                           </Badge>
                           {rule.targetType === "external" && rule.customResolver && (
                             <Badge className="border-0 bg-slate-500/10 text-slate-400 text-[9px] px-1.5 py-0 font-mono">
@@ -478,12 +478,12 @@ export function PortsPage() {
                           )}
                           {rule.isRegex && (
                             <Badge className="border-0 bg-yellow-500/10 text-yellow-400 text-[9px] px-1.5 py-0 font-mono">
-                              Regex
+                              {t("regex")}
                             </Badge>
                           )}
                           {rule.stripPrefix && (
                             <Badge className="border-0 bg-emerald-500/10 text-emerald-400 text-[9px] px-1.5 py-0 font-mono">
-                              Strip Prefix
+                              {t("stripPrefix")}
                             </Badge>
                           )}
                         </div>
@@ -530,7 +530,7 @@ export function PortsPage() {
         mode={formMode}
         rule={editTarget}
         onSave={() =>
-          toast.success(formMode === "create" ? "Port rule added" : "Port rule updated")
+          toast.success(formMode === "create" ? t("portRuleCreated") : t("portRuleUpdated"))
         }
       />
 

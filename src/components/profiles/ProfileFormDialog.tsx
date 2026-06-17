@@ -240,12 +240,8 @@ export function ProfileFormDialog({ open, onOpenChange, mode, profile, onSave }:
                         </div>
                         <span>
                           {allSelected
-                            ? t("locale") === "th"
-                              ? "ยกเลิกกลุ่ม"
-                              : "Deselect Group"
-                            : t("locale") === "th"
-                            ? "เลือกทั้งกลุ่ม"
-                            : "Select Group"}
+                            ? t("deselectGroupAll")
+                            : t("selectGroupAll")}
                         </span>
                       </button>
                     </div>
@@ -313,12 +309,8 @@ export function ProfileFormDialog({ open, onOpenChange, mode, profile, onSave }:
                       </div>
                       <span>
                         {isGroupAllSelected(unassignedHosts)
-                          ? t("locale") === "th"
-                            ? "ยกเลิกกลุ่ม"
-                            : "Deselect Group"
-                          : t("locale") === "th"
-                          ? "เลือกทั้งกลุ่ม"
-                          : "Select Group"}
+                          ? t("deselectGroupAll")
+                          : t("selectGroupAll")}
                       </span>
                     </button>
                   </div>

@@ -83,7 +83,7 @@ export function DashboardPage() {
         }
       } catch (err) {
         console.error("Failed to load diff:", err);
-        setDiff(`Error loading hosts diff: ${err}`);
+        setDiff(t("errorLoadingDiff", { error: String(err) }));
       }
     }
     loadDiff();
@@ -105,16 +105,16 @@ export function DashboardPage() {
             const ip = entry.ip.trim();
             const domain = entry.domain.trim();
             if (!ip) {
-              throw new Error(`IP address cannot be empty for domain "${domain}"`);
+              throw new Error(t("ipCannotBeEmpty", { domain }));
             }
             if (!domain) {
-              throw new Error("Domain name cannot be empty");
+              throw new Error(t("domainCannotBeEmpty"));
             }
             if (!ipRegex.test(ip)) {
-              throw new Error(`Invalid IP address format: "${ip}"`);
+              throw new Error(t("invalidIpFormat", { ip }));
             }
             if (!domainRegex.test(domain)) {
-              throw new Error(`Invalid domain name format: "${domain}"`);
+              throw new Error(t("invalidDomainFormat", { domain }));
             }
           }
         }
@@ -122,7 +122,7 @@ export function DashboardPage() {
 
       // 1. Create backup first if enabled
       if (settings.backupBeforeWrite) {
-        await addBackup(`Auto-backup before quick apply (profile: ${activeProfile.name})`);
+        await addBackup(t("autoBackupBeforeApply", { name: activeProfile.name }));
       }
 
       // 3. Write hosts block via Tauri command
@@ -134,14 +134,14 @@ export function DashboardPage() {
       }
 
       if (settings.showApplyNotifications) {
-        toast.success("Successfully applied to hosts file!", {
-          description: `Active profile "${activeProfile.name}" hosts synced.`,
+        toast.success(t("applySuccess"), {
+          description: t("applySuccessDetail", { name: activeProfile.name }),
         });
       }
     } catch (e) {
       console.error("Failed to apply configuration:", e);
       if (settings.showErrorAlerts) {
-        toast.error("Elevation or Apply failed", {
+        toast.error(t("applyFailed"), {
           description: String(e),
         });
       }
@@ -154,12 +154,12 @@ export function DashboardPage() {
     if (!lastBackup) return;
     try {
       await restoreBackup(lastBackup.id);
-      toast.success("Restore completed successfully!", {
-        description: `Hosts file restored to backup from ${new Date(lastBackup.createdAt).toLocaleString()}`,
+      toast.success(t("restoreSuccess"), {
+        description: t("restoreSuccessDetail", { date: new Date(lastBackup.createdAt).toLocaleString() }),
       });
     } catch (e) {
       console.error("Failed to restore backup:", e);
-      toast.error("Failed to restore backup", {
+      toast.error(t("restoreFailed"), {
         description: String(e),
       });
     } finally {
@@ -169,12 +169,12 @@ export function DashboardPage() {
 
   const handleActivateProfile = (profileId: string, name: string) => {
     activateProfile(profileId);
-    toast.success(`Profile "${name}" activated`);
+    toast.success(t("profileActivated", { name }));
   };
 
   const handleOpenPort = async (port: any) => {
     const url = `${port.protocol}://${port.targetHost}:${port.port}`;
-    toast.info(`Opening ${url}`, { description: `→ ${port.domain}` });
+    toast.info(t("openingUrl", { url }), { description: t("toDomain", { domain: port.domain }) });
     try {
       if (isTauri) {
         await invoke("open_in_browser", { url });
@@ -238,7 +238,7 @@ export function DashboardPage() {
             value={`${runningPorts.length} / ${ports.length}`}
             badge={
               <Badge className="bg-amber-500/15 text-amber-400 border-0 text-[10px] px-1.5 py-0.5">
-                Live
+                {t("live")}
               </Badge>
             }
           />
@@ -408,7 +408,7 @@ export function DashboardPage() {
         <div className="rounded-xl border border-border bg-card">
           <div className="flex items-center justify-between px-5 py-4 border-b border-border">
             <span className="text-sm font-medium">{t("hostsFilePreview")}</span>
-            <Badge className="bg-emerald-500/15 text-emerald-400 border-0 text-[10px]">Live</Badge>
+            <Badge className="bg-emerald-500/15 text-emerald-400 border-0 text-[10px]">{t("live")}</Badge>
           </div>
           <div className="p-5">
             {diff ? (

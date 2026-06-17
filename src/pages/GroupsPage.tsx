@@ -174,7 +174,7 @@ export function GroupsPage() {
         mode={formMode}
         group={editTarget}
         onSave={() =>
-          toast.success(formMode === "create" ? "Group created" : "Group updated")
+          toast.success(formMode === "create" ? t("groupCreated") : t("groupUpdated"))
         }
       />
 

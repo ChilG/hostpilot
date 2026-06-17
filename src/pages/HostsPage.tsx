@@ -153,11 +153,11 @@ export function HostsPage() {
           <Table>
             <TableHeader className="sticky top-0 bg-background border-b border-border z-20">
               <TableRow>
-                <TableHead className="sticky left-0 top-0 bg-background z-30 text-left text-xs text-muted-foreground font-medium px-6 py-3 w-10 border-r border-border">On</TableHead>
+                <TableHead className="sticky left-0 top-0 bg-background z-30 text-left text-xs text-muted-foreground font-medium px-6 py-3 w-10 border-r border-border">{t("on")}</TableHead>
                 <TableHead className="text-left text-xs text-muted-foreground font-medium px-3 py-3">{t("domain")}</TableHead>
                 <TableHead className="text-left text-xs text-muted-foreground font-medium px-3 py-3">{t("ipAddress")}</TableHead>
                 <TableHead className="text-left text-xs text-muted-foreground font-medium px-3 py-3">{t("group")}</TableHead>
-                <TableHead className="text-left text-xs text-muted-foreground font-medium px-3 py-3">Source</TableHead>
+                <TableHead className="text-left text-xs text-muted-foreground font-medium px-3 py-3">{t("source")}</TableHead>
                 <TableHead className="text-left text-xs text-muted-foreground font-medium px-3 py-3">{t("description")}</TableHead>
                 <TableHead className="sticky right-0 top-0 bg-background z-30 text-right text-xs text-muted-foreground font-medium px-6 py-3 border-l border-border">{t("actions")}</TableHead>
               </TableRow>
@@ -208,7 +208,7 @@ export function HostsPage() {
                     </TableCell>
                     <TableCell className="px-3 py-3">
                       <Badge className={`text-[10px] border-0 ${sourceColors[host.source]}`}>
-                        {host.source}
+                        {t(host.source)}
                       </Badge>
                     </TableCell>
                     <TableCell className="px-3 py-3">
