@@ -72,6 +72,14 @@ pub struct AppSettings {
     pub port_status_alerts: bool,
     pub color_theme: String,
     pub language: String,
+    #[serde(default)]
+    pub ssl_enabled: bool,
+    #[serde(default = "default_ssl_port")]
+    pub ssl_port: u16,
+}
+
+fn default_ssl_port() -> u16 {
+    443
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

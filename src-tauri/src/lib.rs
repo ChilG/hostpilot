@@ -3,13 +3,29 @@ mod db;
 mod hosts;
 mod ports;
 mod proxy;
+mod ssl;
 
 use config::{AppConfig, BackupRecord, HostEntry};
 use std::process::Command;
 
 #[tauri::command]
-fn start_proxy_server(app_handle: tauri::AppHandle, port: u16) -> Result<(), String> {
-    proxy::start_proxy(app_handle, port)
+async fn start_proxy_server(
+    app_handle: tauri::AppHandle,
+    port: u16,
+    ssl_enabled: bool,
+    ssl_port: u16,
+) -> Result<(), String> {
+    proxy::start_proxy(app_handle, port, ssl_enabled, ssl_port).await
+}
+
+#[tauri::command]
+fn check_ca_status() -> bool {
+    ssl::is_ca_trusted()
+}
+
+#[tauri::command]
+fn install_root_ca(app_handle: tauri::AppHandle) -> Result<(), String> {
+    ssl::install_root_ca(&app_handle)
 }
 
 #[tauri::command]
@@ -206,7 +222,9 @@ pub fn run() {
             relaunch_app,
             start_proxy_server,
             stop_proxy_server,
-            get_proxy_status
+            get_proxy_status,
+            check_ca_status,
+            install_root_ca
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -16,6 +16,8 @@ use hickory_resolver::config::{ResolverConfig, ResolverOpts, NameServerConfigGro
 pub struct ProxyState {
     pub shutdown_tx: Arc<Mutex<Option<oneshot::Sender<()>>>>,
     pub running_port: Arc<Mutex<Option<u16>>>,
+    pub ssl_handle: Arc<Mutex<Option<axum_server::Handle>>>,
+    pub ssl_running_port: Arc<Mutex<Option<u16>>>,
 }
 
 impl ProxyState {
@@ -23,6 +25,8 @@ impl ProxyState {
         ProxyState {
             shutdown_tx: Arc::new(Mutex::new(None)),
             running_port: Arc::new(Mutex::new(None)),
+            ssl_handle: Arc::new(Mutex::new(None)),
+            ssl_running_port: Arc::new(Mutex::new(None)),
         }
     }
 }
@@ -250,42 +254,86 @@ async fn proxy_handler(
     }
 }
 
-pub fn start_proxy(app_handle: tauri::AppHandle, port: u16) -> Result<(), String> {
+pub async fn start_proxy(app_handle: tauri::AppHandle, port: u16, ssl_enabled: bool, ssl_port: u16) -> Result<(), String> {
     let state = app_handle.state::<ProxyState>();
-    let mut shutdown_lock = state.shutdown_tx.lock().unwrap();
-    let mut port_lock = state.running_port.lock().unwrap();
     
-    if shutdown_lock.is_some() {
-        return Err("Proxy server is already running".to_string());
+    // 1. Start HTTP Server inside a block scope so lock guards are dropped before await
+    {
+        let mut shutdown_lock = state.shutdown_tx.lock().unwrap();
+        let ssl_handle_lock = state.ssl_handle.lock().unwrap();
+        if shutdown_lock.is_some() || ssl_handle_lock.is_some() {
+            return Err("Proxy server is already running".to_string());
+        }
+        
+        let (tx, rx) = oneshot::channel::<()>();
+        *shutdown_lock = Some(tx);
+        let mut port_lock = state.running_port.lock().unwrap();
+        *port_lock = Some(port);
+        
+        let app_handle_clone = app_handle.clone();
+        tauri::async_runtime::spawn(async move {
+            let app = Router::new()
+                .fallback(any(move |req| proxy_handler(app_handle_clone, req)));
+            
+            let addr = SocketAddr::from(([127, 0, 0, 1], port));
+            let listener = match tokio::net::TcpListener::bind(&addr).await {
+                Ok(l) => l,
+                Err(e) => {
+                    log_proxy_error(&format!("Failed to bind HTTP to port {}: {}", port, e));
+                    return;
+                }
+            };
+            
+            let server = axum::serve(listener, app)
+                .with_graceful_shutdown(async move {
+                    let _ = rx.await;
+                });
+            
+            if let Err(e) = server.await {
+                log_proxy_error(&format!("HTTP Server error: {}", e));
+            }
+        });
     }
     
-    let (tx, rx) = oneshot::channel::<()>();
-    *shutdown_lock = Some(tx);
-    *port_lock = Some(port);
-    
-    let app_handle_clone = app_handle.clone();
-    tauri::async_runtime::spawn(async move {
-        let app = Router::new()
-            .fallback(any(move |req| proxy_handler(app_handle_clone, req)));
+    // 2. Start HTTPS Server if enabled
+    if ssl_enabled {
+        let domains = crate::ssl::get_active_proxy_domains(&app_handle)?;
+        let (cert_pem, key_pem) = crate::ssl::get_or_create_unified_cert(&app_handle, domains)?;
         
-        let addr = SocketAddr::from(([127, 0, 0, 1], port));
-        let listener = match tokio::net::TcpListener::bind(&addr).await {
-            Ok(l) => l,
+        let tls_config = match axum_server::tls_rustls::RustlsConfig::from_pem(
+            cert_pem.into_bytes(), 
+            key_pem.into_bytes()
+        ).await {
+            Ok(cfg) => cfg,
             Err(e) => {
-                log_proxy_error(&format!("Failed to bind to port {}: {}", port, e));
-                return;
+                let _ = stop_proxy(app_handle);
+                return Err(format!("Failed to load TLS config: {}", e));
             }
         };
         
-        let server = axum::serve(listener, app)
-            .with_graceful_shutdown(async move {
-                let _ = rx.await;
-            });
-        
-        if let Err(e) = server.await {
-            log_proxy_error(&format!("Server error: {}", e));
+        let handle = axum_server::Handle::new();
+        {
+            let mut ssl_handle_lock = state.ssl_handle.lock().unwrap();
+            let mut ssl_port_lock = state.ssl_running_port.lock().unwrap();
+            *ssl_handle_lock = Some(handle.clone());
+            *ssl_port_lock = Some(ssl_port);
         }
-    });
+        
+        let app_handle_clone_ssl = app_handle.clone();
+        tauri::async_runtime::spawn(async move {
+            let app = Router::new()
+                .fallback(any(move |req| proxy_handler(app_handle_clone_ssl, req)));
+            
+            let addr = SocketAddr::from(([127, 0, 0, 1], ssl_port));
+            let server = axum_server::bind_rustls(addr, tls_config)
+                .handle(handle)
+                .serve(app.into_make_service());
+            
+            if let Err(e) = server.await {
+                log_proxy_error(&format!("HTTPS Server error: {}", e));
+            }
+        });
+    }
     
     Ok(())
 }
@@ -294,10 +342,24 @@ pub fn stop_proxy(app_handle: tauri::AppHandle) -> Result<(), String> {
     let state = app_handle.state::<ProxyState>();
     let mut shutdown_lock = state.shutdown_tx.lock().unwrap();
     let mut port_lock = state.running_port.lock().unwrap();
+    let mut ssl_handle_lock = state.ssl_handle.lock().unwrap();
+    let mut ssl_port_lock = state.ssl_running_port.lock().unwrap();
+    
+    let mut stopped_any = false;
     
     if let Some(tx) = shutdown_lock.take() {
         let _ = tx.send(());
         *port_lock = None;
+        stopped_any = true;
+    }
+    
+    if let Some(handle) = ssl_handle_lock.take() {
+        handle.shutdown();
+        *ssl_port_lock = None;
+        stopped_any = true;
+    }
+    
+    if stopped_any {
         Ok(())
     } else {
         Err("Proxy server is not running".to_string())

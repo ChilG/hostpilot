@@ -32,7 +32,9 @@ import {
   Play,
   Square,
   Globe,
-  ShieldAlert
+  ShieldAlert,
+  ShieldCheck,
+  Lock
 } from "lucide-react";
 
 export function PortsPage() {
@@ -47,6 +49,11 @@ export function PortsPage() {
     deleteProxyRule,
     startProxyServer,
     stopProxyServer,
+    settings,
+    updateSettings,
+    caTrusted,
+    installRootCa,
+    checkCaStatus,
   } = useAppStore();
   
   const { t } = useTranslation();
@@ -66,6 +73,7 @@ export function PortsPage() {
   const [proxyDeleteTarget, setProxyDeleteTarget] = useState<ProxyRule | undefined>();
   const [proxyPortInput, setProxyPortInput] = useState<number>(8080);
   const [isStarting, setIsStarting] = useState(false);
+  const [isInstallingCa, setIsInstallingCa] = useState(false);
 
   const runningPorts = ports.filter((p) => p.status === "running").length;
   const runningProxyRules = proxyRules.filter((r) => r.enabled).length;
@@ -85,6 +93,7 @@ export function PortsPage() {
         }
       });
     }
+    checkCaStatus();
   }, []);
 
   // Sync input with running proxy port
@@ -234,7 +243,7 @@ export function PortsPage() {
         }
       />
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden gap-0">
         {/* Tabs switcher List */}
         <div className="border-b border-border bg-card px-6 py-2">
           <TabsList variant="line" className="h-8 p-0">
@@ -422,6 +431,106 @@ export function PortsPage() {
                   <p>{t("portPrivilegeWarning")}</p>
                 </div>
               )}
+            </div>
+
+            {/* HTTPS / SSL Settings Card */}
+            <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold flex items-center gap-1.5">
+                    <Lock className="w-4 h-4 text-indigo-400" />
+                    {t("sslSettings")}
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {t("sslSettingsDesc")}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-6">
+                  {/* HTTPS Port */}
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="sslPort" className="text-xs text-muted-foreground font-mono">{t("sslPortLabel")}:</Label>
+                    <Input
+                      id="sslPort"
+                      type="number"
+                      value={settings.sslPort}
+                      onChange={(e) => updateSettings({ sslPort: parseInt(e.target.value) || 443 })}
+                      disabled={proxyRunningPort !== null}
+                      className="w-20 h-8 text-xs font-mono text-center"
+                    />
+                  </div>
+
+                  {/* Enable HTTPS Switch */}
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="sslEnabled" className="text-xs text-muted-foreground font-mono">{t("enableSsl")}:</Label>
+                    <Switch
+                      id="sslEnabled"
+                      checked={settings.sslEnabled}
+                      onCheckedChange={(checked) => updateSettings({ sslEnabled: checked })}
+                      disabled={proxyRunningPort !== null}
+                      className="scale-90"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* CA Certificate Status & Actions */}
+              <div className="border-t border-border pt-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="text-xs">
+                    <span className="text-muted-foreground block">{t("caCertStatus")}</span>
+                    <span className="font-semibold flex items-center gap-1.5 mt-0.5">
+                      {caTrusted ? (
+                        <>
+                          <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                          <span className="text-emerald-500">{t("caTrusted")}</span>
+                        </>
+                      ) : (
+                        <>
+                          <ShieldAlert className="w-4 h-4 text-red-500" />
+                          <span className="text-red-500">{t("caUntrusted")}</span>
+                        </>
+                      )}
+                    </span>
+                  </div>
+                </div>
+
+                <Button
+                  variant={caTrusted ? "outline" : "default"}
+                  size="sm"
+                  onClick={async () => {
+                    setIsInstallingCa(true);
+                    try {
+                      await installRootCa();
+                      toast.success(t("notif.caInstalledTitle"));
+                    } catch (e) {
+                      toast.error(t("notif.caInstallErrorTitle"), { description: String(e) });
+                    } finally {
+                      setIsInstallingCa(false);
+                    }
+                  }}
+                  disabled={caTrusted || isInstallingCa}
+                  className={`h-8 text-xs font-medium cursor-pointer ${
+                    !caTrusted ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""
+                  }`}
+                >
+                  {isInstallingCa ? t("installing") : t("installCaButton")}
+                </Button>
+              </div>
+
+              {/* Privilege Hint */}
+              {!caTrusted && (
+                <div className="flex items-start gap-2 text-[10px] text-amber-500 bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-lg">
+                  <ShieldAlert className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                  <p>{t("sslPrivilegeHint")}</p>
+                </div>
+              )}
+
+              {/* Firefox Specific Help Accordion/Tip */}
+              <div className="text-[10px] bg-slate-500/5 border border-border p-3 rounded-lg space-y-1">
+                <span className="font-semibold block text-indigo-400">{t("firefoxHelpTitle")}</span>
+                <p className="text-muted-foreground leading-relaxed">{t("firefoxHelpDesc")}</p>
+              </div>
             </div>
 
             {/* Proxy rules list */}

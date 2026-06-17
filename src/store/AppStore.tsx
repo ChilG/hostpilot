@@ -62,6 +62,8 @@ export type AppSettings = {
   portStatusAlerts: boolean;
   colorTheme: "dark" | "light" | "system";
   language: "en" | "th";
+  sslEnabled: boolean;
+  sslPort: number;
 };
 
 export const defaultSettings: AppSettings = {
@@ -77,6 +79,8 @@ export const defaultSettings: AppSettings = {
   portStatusAlerts: false,
   colorTheme: "dark",
   language: "en",
+  sslEnabled: false,
+  sslPort: 443,
 };
 
 type AppStore = {
@@ -121,12 +125,15 @@ type AppStore = {
   // Proxy Rules CRUD & Control
   proxyRules: ProxyRule[];
   proxyRunningPort: number | null;
+  caTrusted: boolean;
   addProxyRule: (r: Omit<ProxyRule, "id" | "createdAt" | "updatedAt">) => void;
   updateProxyRule: (id: string, patch: Partial<ProxyRule>) => void;
   deleteProxyRule: (id: string) => void;
   startProxyServer: (port: number) => Promise<void>;
   stopProxyServer: () => Promise<void>;
   checkProxyStatus: () => Promise<void>;
+  installRootCa: () => Promise<void>;
+  checkCaStatus: () => Promise<void>;
 
   // Backups
   addBackup: (reason: string) => Promise<Backup>;
@@ -178,6 +185,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [proxyRules, setProxyRules] = useState<ProxyRule[]>([]);
   const [proxyRunningPort, setProxyRunningPort] = useState<number | null>(null);
+  const [caTrusted, setCaTrusted] = useState(false);
 
   const t = (key: string, params?: Record<string, string | number>): string => {
     const lang = settings.language || "en";
@@ -212,6 +220,13 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
             setProxyRunningPort(runningPort);
           } catch (e) {
             console.error("Failed to load proxy status on init:", e);
+          }
+
+          try {
+            const trusted = await invoke<boolean>("check_ca_status");
+            setCaTrusted(trusted);
+          } catch (e) {
+            console.error("Failed to load CA status on init:", e);
           }
           
           let initialSettings = config.settings || defaultSettings;
@@ -533,7 +548,11 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   const startProxyServer = async (port: number) => {
     try {
       if (isTauri) {
-        await invoke("start_proxy_server", { port });
+        await invoke("start_proxy_server", {
+          port,
+          sslEnabled: settings.sslEnabled,
+          sslPort: settings.sslPort,
+        });
         setProxyRunningPort(port);
       } else {
         setProxyRunningPort(port);
@@ -579,6 +598,46 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       }
     } catch (e) {
       console.error("Failed to check proxy status:", e);
+    }
+  };
+
+  const checkCaStatus = async () => {
+    try {
+      if (isTauri) {
+        const trusted = await invoke<boolean>("check_ca_status");
+        setCaTrusted(trusted);
+      }
+    } catch (e) {
+      console.error("Failed to check CA status:", e);
+    }
+  };
+
+  const installRootCa = async () => {
+    try {
+      if (isTauri) {
+        await invoke("install_root_ca");
+        setCaTrusted(true);
+        addNotification(
+          t("notif.caInstalledTitle"),
+          t("notif.caInstalledDesc"),
+          "success"
+        );
+      } else {
+        setCaTrusted(true);
+        addNotification(
+          "Local Root CA Installed (Mock)",
+          "Root CA has been added to user trust store.",
+          "success"
+        );
+      }
+    } catch (e) {
+      console.error("Failed to install Root CA:", e);
+      addNotification(
+        t("notif.caInstallErrorTitle"),
+        t("notif.caInstallErrorDesc", { error: String(e) }),
+        "error"
+      );
+      throw e;
     }
   };
 
@@ -908,12 +967,15 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         checkPortLive,
         proxyRules,
         proxyRunningPort,
+        caTrusted,
         addProxyRule,
         updateProxyRule,
         deleteProxyRule,
         startProxyServer,
         stopProxyServer,
         checkProxyStatus,
+        installRootCa,
+        checkCaStatus,
         addBackup,
         deleteBackup,
         restoreBackup,
