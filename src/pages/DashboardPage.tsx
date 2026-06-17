@@ -415,14 +415,22 @@ export function DashboardPage() {
               <pre className="text-xs font-mono bg-muted/40 rounded-lg p-4 leading-6 max-h-[300px] overflow-y-auto whitespace-pre-wrap">
                 {diff.split("\n").map((line, idx) => {
                   let color = "text-muted-foreground/60";
+                  let displayLine = line;
                   if (line.startsWith("+")) {
                     color = "text-emerald-400 bg-emerald-500/5";
+                    const content = line.slice(1);
+                    displayLine = content.trim() === "" ? "+" : `+ ${content}`;
                   } else if (line.startsWith("-")) {
                     color = "text-rose-400 bg-rose-500/5 font-medium";
+                    const content = line.slice(1);
+                    displayLine = content.trim() === "" ? "-" : `- ${content}`;
+                  } else if (line.startsWith(" ")) {
+                    const content = line.slice(1);
+                    displayLine = content.trim() === "" ? " " : `  ${content}`;
                   }
                   return (
                     <div key={idx} className={`${color} px-2 py-0.5 rounded-sm`}>
-                      {line}
+                      {displayLine}
                     </div>
                   );
                 })}
