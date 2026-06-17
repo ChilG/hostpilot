@@ -2,9 +2,28 @@ mod config;
 mod db;
 mod hosts;
 mod ports;
+mod proxy;
 
 use config::{AppConfig, BackupRecord, HostEntry};
 use std::process::Command;
+
+#[tauri::command]
+fn start_proxy_server(app_handle: tauri::AppHandle, port: u16) -> Result<(), String> {
+    proxy::start_proxy(app_handle, port)
+}
+
+#[tauri::command]
+fn stop_proxy_server(app_handle: tauri::AppHandle) -> Result<(), String> {
+    proxy::stop_proxy(app_handle)
+}
+
+#[tauri::command]
+fn get_proxy_status(app_handle: tauri::AppHandle) -> Result<Option<u16>, String> {
+    use tauri::Manager;
+    let state = app_handle.state::<proxy::ProxyState>();
+    let port_lock = state.running_port.lock().unwrap();
+    Ok(*port_lock)
+}
 
 #[tauri::command]
 fn close_splashscreen(app_handle: tauri::AppHandle) -> Result<(), String> {
@@ -164,6 +183,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .manage(proxy::ProxyState::new())
         .invoke_handler(tauri::generate_handler![
             close_splashscreen,
             read_hosts_file,
@@ -183,7 +203,10 @@ pub fn run() {
             get_default_backups_path,
             select_backup_directory,
             get_system_locale,
-            relaunch_app
+            relaunch_app,
+            start_proxy_server,
+            stop_proxy_server,
+            get_proxy_status
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

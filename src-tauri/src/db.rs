@@ -1,6 +1,6 @@
 use tauri::Manager;
 use rusqlite::{Connection, params};
-use crate::config::{AppConfig, HostEntry, HostGroup, HostProfile, PortRule, BackupRecord};
+use crate::config::{AppConfig, HostEntry, HostGroup, HostProfile, PortRule, BackupRecord, ProxyRule};
 
 // Load queries at compile-time from external SQL files
 const QUERY_SELECT_GROUPS: &str = include_str!("../queries/select_groups.sql");
@@ -12,6 +12,7 @@ const QUERY_SELECT_BACKUPS: &str = include_str!("../queries/select_backups.sql")
 const QUERY_SELECT_APP_STATE_ONBOARDED: &str = include_str!("../queries/select_app_state_onboarded.sql");
 const QUERY_SELECT_APP_STATE_SETTINGS: &str = include_str!("../queries/select_app_state_settings.sql");
 const QUERY_SELECT_APP_STATE_NOTIFICATIONS: &str = include_str!("../queries/select_app_state_notifications.sql");
+const QUERY_SELECT_PROXY_RULES: &str = include_str!("../queries/select_proxy_rules.sql");
 
 const QUERY_DELETE_ALL_PROFILE_ENTRIES: &str = include_str!("../queries/delete_all_profile_entries.sql");
 const QUERY_DELETE_ALL_PROFILES: &str = include_str!("../queries/delete_all_profiles.sql");
@@ -20,6 +21,7 @@ const QUERY_DELETE_ALL_GROUPS: &str = include_str!("../queries/delete_all_groups
 const QUERY_DELETE_ALL_PORTS: &str = include_str!("../queries/delete_all_ports.sql");
 const QUERY_DELETE_ALL_BACKUPS: &str = include_str!("../queries/delete_all_backups.sql");
 const QUERY_DELETE_ALL_APP_STATE: &str = include_str!("../queries/delete_all_app_state.sql");
+const QUERY_DELETE_ALL_PROXY_RULES: &str = include_str!("../queries/delete_all_proxy_rules.sql");
 
 const QUERY_INSERT_GROUP: &str = include_str!("../queries/insert_group.sql");
 const QUERY_INSERT_HOST: &str = include_str!("../queries/insert_host.sql");
@@ -29,6 +31,7 @@ const QUERY_INSERT_PROFILE_ENTRY: &str = include_str!("../queries/insert_profile
 const QUERY_INSERT_PORT: &str = include_str!("../queries/insert_port.sql");
 const QUERY_INSERT_BACKUP: &str = include_str!("../queries/insert_backup.sql");
 const QUERY_INSERT_APP_STATE: &str = include_str!("../queries/insert_app_state.sql");
+const QUERY_INSERT_PROXY_RULE: &str = include_str!("../queries/insert_proxy_rule.sql");
 
 pub fn get_db_path(app_handle: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
     let app_dir = app_handle
@@ -60,6 +63,7 @@ pub fn init_db(app_handle: &tauri::AppHandle) -> Result<(), String> {
     
     let migrations = [
         include_str!("../migrations/0001_init.sql"),
+        include_str!("../migrations/0002_proxy.sql"),
     ];
     
     for (i, migration_sql) in migrations.iter().enumerate() {
@@ -216,6 +220,28 @@ pub fn load_config_from_db(app_handle: &tauri::AppHandle) -> Result<AppConfig, S
         Err(e) => return Err(e.to_string()),
     };
     
+    // 7. Load proxy rules
+    let mut stmt = conn.prepare(QUERY_SELECT_PROXY_RULES)
+        .map_err(|e| e.to_string())?;
+    let proxy_rules_iter = stmt.query_map([], |row| {
+        let enabled_val: i32 = row.get(6)?;
+        Ok(ProxyRule {
+            id: row.get(0)?,
+            domain: row.get(1)?,
+            path_prefix: row.get(2)?,
+            target_type: row.get(3)?,
+            target_address: row.get(4)?,
+            custom_resolver: row.get(5)?,
+            enabled: enabled_val != 0,
+            created_at: row.get(7)?,
+            updated_at: row.get(8)?,
+        })
+    }).map_err(|e| e.to_string())?;
+    let mut proxy_rules = Vec::new();
+    for r in proxy_rules_iter {
+        proxy_rules.push(r.map_err(|e| e.to_string())?);
+    }
+    
     Ok(AppConfig {
         hosts,
         groups,
@@ -225,6 +251,7 @@ pub fn load_config_from_db(app_handle: &tauri::AppHandle) -> Result<AppConfig, S
         onboarded,
         settings,
         notifications,
+        proxy_rules,
     })
 }
 
@@ -239,6 +266,7 @@ pub fn save_config_to_db(app_handle: &tauri::AppHandle, config: &AppConfig) -> R
     tx.execute(QUERY_DELETE_ALL_PORTS, []).map_err(|e| e.to_string())?;
     tx.execute(QUERY_DELETE_ALL_BACKUPS, []).map_err(|e| e.to_string())?;
     tx.execute(QUERY_DELETE_ALL_APP_STATE, []).map_err(|e| e.to_string())?;
+    tx.execute(QUERY_DELETE_ALL_PROXY_RULES, []).map_err(|e| e.to_string())?;
     
     for g in &config.groups {
         tx.execute(
@@ -314,6 +342,23 @@ pub fn save_config_to_db(app_handle: &tauri::AppHandle, config: &AppConfig) -> R
             QUERY_INSERT_BACKUP,
             params![b.id, b.created_at, b.reason, b.size],
         ).map_err(|e| format!("Failed to insert backup: {}", e))?;
+    }
+
+    for r in &config.proxy_rules {
+        tx.execute(
+            QUERY_INSERT_PROXY_RULE,
+            params![
+                r.id,
+                r.domain,
+                r.path_prefix,
+                r.target_type,
+                r.target_address,
+                r.custom_resolver,
+                if r.enabled { 1 } else { 0 },
+                r.created_at,
+                r.updated_at
+            ],
+        ).map_err(|e| format!("Failed to insert proxy rule: {}", e))?;
     }
     
     tx.execute(

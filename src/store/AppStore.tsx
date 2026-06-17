@@ -32,6 +32,18 @@ export type AppNotification = {
   unread: boolean;
 };
 
+export interface ProxyRule {
+  id: string;
+  domain: string;
+  pathPrefix: string;
+  targetType: "local" | "external";
+  targetAddress: string;
+  customResolver?: string;
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type { HostEntry, HostGroup, HostProfile, PortRule, Backup };
 
 export type AppSettings = {
@@ -103,6 +115,16 @@ type AppStore = {
   deletePort: (id: string) => void;
   checkPortLive: (id: string, host: string, port: number) => Promise<boolean>;
 
+  // Proxy Rules CRUD & Control
+  proxyRules: ProxyRule[];
+  proxyRunningPort: number | null;
+  addProxyRule: (r: Omit<ProxyRule, "id" | "createdAt" | "updatedAt">) => void;
+  updateProxyRule: (id: string, patch: Partial<ProxyRule>) => void;
+  deleteProxyRule: (id: string) => void;
+  startProxyServer: (port: number) => Promise<void>;
+  stopProxyServer: () => Promise<void>;
+  checkProxyStatus: () => Promise<void>;
+
   // Backups
   addBackup: (reason: string) => Promise<Backup>;
   deleteBackup: (id: string) => void;
@@ -120,11 +142,13 @@ type AppStore = {
     groups?: any[];
     profiles?: any[];
     ports?: any[];
+    proxyRules?: any[];
   }) => {
     hostsImported: number;
     groupsImported: number;
     profilesImported: number;
     portsImported: number;
+    proxyRulesImported: number;
   };
 };
 
@@ -149,6 +173,8 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   const [onboarded, setOnboarded] = useState(false);
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [proxyRules, setProxyRules] = useState<ProxyRule[]>([]);
+  const [proxyRunningPort, setProxyRunningPort] = useState<number | null>(null);
 
   // ─── Initialization ────────────────────────────────────────────────────────
 
@@ -164,6 +190,14 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
           setBackups(config.backups || []);
           setOnboarded(config.onboarded || false);
           setNotifications(config.notifications || []);
+          setProxyRules(config.proxyRules || []);
+          
+          try {
+            const runningPort = await invoke<number | null>("get_proxy_status");
+            setProxyRunningPort(runningPort);
+          } catch (e) {
+            console.error("Failed to load proxy status on init:", e);
+          }
           
           let initialSettings = config.settings || defaultSettings;
           try {
@@ -204,6 +238,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
             setOnboarded(config.onboarded || false);
             setSettings(config.settings || defaultSettings);
             setNotifications(config.notifications || []);
+            setProxyRules(config.proxyRules || []);
           } else {
             // Seed defaults first time
             setHosts(demoHosts);
@@ -245,7 +280,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     if (loading) return;
 
     async function saveStore() {
-      const config = { hosts, groups, profiles, ports, backups, onboarded, settings, notifications };
+      const config = { hosts, groups, profiles, ports, backups, onboarded, settings, notifications, proxyRules };
       try {
         if (isTauri) {
           await invoke("save_app_config", { config });
@@ -257,7 +292,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       }
     }
     saveStore();
-  }, [hosts, groups, profiles, ports, backups, onboarded, loading, settings, notifications]);
+  }, [hosts, groups, profiles, ports, backups, onboarded, loading, settings, notifications, proxyRules]);
 
   const updateSettings = (patch: Partial<AppSettings>) => {
     setSettings((prev) => {
@@ -456,7 +491,75 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     return isOpen;
   };
 
+  // ── Proxy Rules ──
+  const addProxyRule = (r: Omit<ProxyRule, "id" | "createdAt" | "updatedAt">) => {
+    setProxyRules((prev) => [
+      ...prev,
+      { ...r, id: uid(), createdAt: now(), updatedAt: now() },
+    ]);
+  };
 
+  const updateProxyRule = (id: string, patch: Partial<ProxyRule>) => {
+    setProxyRules((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, ...patch, updatedAt: now() } : r))
+    );
+  };
+
+  const deleteProxyRule = (id: string) => {
+    setProxyRules((prev) => prev.filter((r) => r.id !== id));
+  };
+
+  const startProxyServer = async (port: number) => {
+    try {
+      if (isTauri) {
+        await invoke("start_proxy_server", { port });
+        setProxyRunningPort(port);
+      } else {
+        setProxyRunningPort(port);
+      }
+      addNotification(
+        "Proxy Server Started",
+        `Reverse proxy is running on port ${port}.`,
+        "success"
+      );
+    } catch (e) {
+      console.error("Failed to start proxy:", e);
+      addNotification(
+        "Proxy Server Error",
+        `Failed to start proxy on port ${port}: ${e}`,
+        "error"
+      );
+      throw e;
+    }
+  };
+
+  const stopProxyServer = async () => {
+    try {
+      if (isTauri) {
+        await invoke("stop_proxy_server");
+      }
+      setProxyRunningPort(null);
+      addNotification(
+        "Proxy Server Stopped",
+        `Reverse proxy has been shut down.`,
+        "info"
+      );
+    } catch (e) {
+      console.error("Failed to stop proxy:", e);
+      throw e;
+    }
+  };
+
+  const checkProxyStatus = async () => {
+    try {
+      if (isTauri) {
+        const port = await invoke<number | null>("get_proxy_status");
+        setProxyRunningPort(port);
+      }
+    } catch (e) {
+      console.error("Failed to check proxy status:", e);
+    }
+  };
 
   // ── Backups ──
   const addBackup = async (reason: string): Promise<Backup> => {
@@ -551,16 +654,19 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     groups?: any[];
     profiles?: any[];
     ports?: any[];
+    proxyRules?: any[];
   }) => {
     const groupsData = configData.groups || [];
     const hostsData = configData.hosts || [];
     const profilesData = configData.profiles || [];
     const portsData = configData.ports || [];
+    const proxyRulesData = configData.proxyRules || [];
 
     let groupsImported = 0;
     let hostsImported = 0;
     let profilesImported = 0;
     let portsImported = 0;
+    let proxyRulesImported = 0;
 
     const groupOldToNewId: Record<string, string> = {};
     const hostOldToNewId: Record<string, string> = {};
@@ -703,15 +809,39 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       }
     });
 
+    // 5. Merge Proxy Rules
+    let nextProxyRules = [...proxyRules];
+    proxyRulesData.forEach((r) => {
+      if (!r.domain || !r.pathPrefix) return;
+      const existing = nextProxyRules.find(
+        (er) => er.domain.toLowerCase() === r.domain.toLowerCase() && er.pathPrefix.toLowerCase() === r.pathPrefix.toLowerCase()
+      );
+      if (!existing) {
+        nextProxyRules.push({
+          id: uid(),
+          domain: r.domain,
+          pathPrefix: r.pathPrefix,
+          targetType: r.targetType || "local",
+          targetAddress: r.targetAddress,
+          customResolver: r.customResolver,
+          enabled: r.enabled !== false,
+          createdAt: r.createdAt || now(),
+          updatedAt: now(),
+        });
+        proxyRulesImported++;
+      }
+    });
+
     // Apply updates synchronously if any changes occurred
     if (groupsImported > 0) setGroups(nextGroups);
     if (hostsImported > 0) setHosts(nextHosts);
     if (profilesImported > 0) setProfiles(nextProfiles);
     if (portsImported > 0) setPorts(nextPorts);
+    if (proxyRulesImported > 0) setProxyRules(nextProxyRules);
 
     addNotification(
       "Configuration Mapped & Imported",
-      `Mapped and merged config: ${hostsImported} hosts, ${groupsImported} groups, ${profilesImported} profiles, ${portsImported} port rules.`,
+      `Mapped and merged config: ${hostsImported} hosts, ${groupsImported} groups, ${profilesImported} profiles, ${portsImported} port rules, ${proxyRulesImported} proxy rules.`,
       "success"
     );
 
@@ -720,6 +850,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       groupsImported,
       profilesImported,
       portsImported,
+      proxyRulesImported,
     };
   };
 
@@ -754,6 +885,14 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         updatePort,
         deletePort,
         checkPortLive,
+        proxyRules,
+        proxyRunningPort,
+        addProxyRule,
+        updateProxyRule,
+        deleteProxyRule,
+        startProxyServer,
+        stopProxyServer,
+        checkProxyStatus,
         addBackup,
         deleteBackup,
         restoreBackup,

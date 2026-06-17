@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { Topbar } from "@/components/layout/Topbar";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useAppStore, isTauri } from "@/store/AppStore";
 import { useTranslation } from "@/i18n/translations";
 import { invoke } from "@tauri-apps/api/core";
@@ -14,8 +15,6 @@ import {
 } from "lucide-react";
 
 type Tab = "import" | "export";
-
-
 
 export function ImportExportPage() {
   const { hosts, groups, profiles, ports, importConfig } = useAppStore();
@@ -142,7 +141,7 @@ export function ImportExportPage() {
         title={t("import-export")}
         subtitle={t("importExportSubtitle")}
       />
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto p-6">
         {/* Hidden File Inputs */}
         <input
           type="file"
@@ -152,35 +151,19 @@ export function ImportExportPage() {
           onChange={handleJsonFileChange}
         />
 
-        {/* Tab Selection */}
-        <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit">
-          {(["import", "export"] as Tab[]).map((tValue) => (
-            <button
-              key={tValue}
-              onClick={() => setTab(tValue)}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors cursor-pointer ${
-                tab === tValue
-                  ? "bg-background text-foreground shadow-sm font-semibold"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {tValue === "import" ? (
-                <span className="flex items-center gap-1.5">
-                  <Upload className="w-3.5 h-3.5" />
-                  {t("import")}
-                </span>
-              ) : (
-                <span className="flex items-center gap-1.5">
-                  <Download className="w-3.5 h-3.5" />
-                  {t("export")}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
+        <Tabs value={tab} onValueChange={(val) => setTab(val as Tab)}>
+          <TabsList className="group-data-horizontal/tabs:h-10">
+            <TabsTrigger value="import" className="text-xs font-semibold px-4 cursor-pointer gap-1.5">
+              <Upload className="w-3.5 h-3.5" />
+              {t("import")}
+            </TabsTrigger>
+            <TabsTrigger value="export" className="text-xs font-semibold px-4 cursor-pointer gap-1.5">
+              <Download className="w-3.5 h-3.5" />
+              {t("export")}
+            </TabsTrigger>
+          </TabsList>
 
-        {tab === "import" && (
-          <div className="max-w-2xl space-y-4">
+          <TabsContent value="import" className="m-0 focus-visible:outline-none max-w-2xl space-y-4">
             {/* Config JSON import */}
             <div className="rounded-xl border border-border bg-card p-5 space-y-4">
               <div className="flex items-start gap-3">
@@ -262,12 +245,9 @@ export function ImportExportPage() {
                 </div>
               )}
             </div>
+          </TabsContent>
 
-          </div>
-        )}
-
-        {tab === "export" && (
-          <div className="max-w-2xl space-y-4">
+          <TabsContent value="export" className="m-0 focus-visible:outline-none max-w-2xl space-y-4">
             {/* Export config.json */}
             <div className="rounded-xl border border-border bg-card p-5 space-y-4">
               <div className="flex items-start gap-3">
@@ -328,8 +308,8 @@ export function ImportExportPage() {
                 ))}
               </div>
             </div>
-          </div>
-        )}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

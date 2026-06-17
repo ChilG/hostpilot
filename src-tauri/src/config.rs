@@ -87,6 +87,20 @@ pub struct AppNotification {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct ProxyRule {
+    pub id: String,
+    pub domain: String,
+    pub path_prefix: String,
+    pub target_type: String, // "local" | "external"
+    pub target_address: String,
+    pub custom_resolver: Option<String>,
+    pub enabled: bool,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AppConfig {
     pub hosts: Vec<HostEntry>,
     pub groups: Vec<HostGroup>,
@@ -98,6 +112,8 @@ pub struct AppConfig {
     pub settings: Option<AppSettings>,
     #[serde(default)]
     pub notifications: Vec<AppNotification>,
+    #[serde(default)]
+    pub proxy_rules: Vec<ProxyRule>,
 }
 
 impl Default for AppConfig {
@@ -111,6 +127,7 @@ impl Default for AppConfig {
             onboarded: false,
             settings: None,
             notifications: vec![],
+            proxy_rules: vec![],
         }
     }
 }
