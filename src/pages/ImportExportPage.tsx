@@ -263,46 +263,6 @@ export function ImportExportPage() {
               )}
             </div>
 
-            {/* Import Behavior Options */}
-            <div className="rounded-xl border border-border bg-card p-5">
-              <p className="text-sm font-medium mb-3">
-                {t("importBehaviorOptions")}
-              </p>
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  {
-                    label: t("importMergeLabel"),
-                    desc: t("importMergeDesc"),
-                    active: true,
-                  },
-                  {
-                    label: t("importReplaceProfileLabel"),
-                    desc: t("importReplaceProfileDesc"),
-                    active: false,
-                  },
-                  {
-                    label: t("importFullReplaceLabel"),
-                    desc: t("importFullReplaceDesc"),
-                    active: false,
-                  },
-                ].map((opt) => (
-                  <button
-                    key={opt.label}
-                    className={`rounded-lg border p-3 text-left transition-colors ${
-                      opt.active
-                        ? "border-indigo-500/40 bg-indigo-500/10"
-                        : "border-border hover:border-border/60 cursor-default"
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5 mb-1">
-                      {opt.active && <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" />}
-                      <p className="text-xs font-semibold">{opt.label}</p>
-                    </div>
-                    <p className="text-[10px] text-muted-foreground">{opt.desc}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
         )}
 
