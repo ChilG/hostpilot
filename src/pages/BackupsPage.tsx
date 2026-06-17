@@ -38,7 +38,9 @@ export function BackupsPage() {
     try {
       await restoreBackup(restoreTarget.id);
       toast.success(t("restoreSuccess"), {
-        description: t("restoreSuccessDetail", { date: new Date(restoreTarget.createdAt).toLocaleString() }),
+        description: t("restoreSuccessDetail", {
+          date: new Date(restoreTarget.createdAt).toLocaleString(),
+        }),
       });
     } catch (e) {
       console.error("Failed to restore backup:", e);
@@ -88,12 +90,8 @@ export function BackupsPage() {
         <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 px-5 py-4 flex items-start gap-3">
           <ShieldCheck className="w-4 h-4 text-violet-400 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-violet-400">
-              {t("autoBackupStrategy")}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {t("autoBackupStrategyDesc")}
-            </p>
+            <p className="text-sm font-medium text-violet-400">{t("autoBackupStrategy")}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t("autoBackupStrategyDesc")}</p>
           </div>
         </div>
 
@@ -101,23 +99,15 @@ export function BackupsPage() {
         <div className="grid grid-cols-3 gap-4">
           <div className="rounded-xl border border-border bg-card p-4 text-center space-y-1">
             <p className="text-2xl font-bold">{backups.length}</p>
-            <p className="text-xs text-muted-foreground">
-              {t("totalBackups")}
-            </p>
+            <p className="text-xs text-muted-foreground">{t("totalBackups")}</p>
           </div>
           <div className="rounded-xl border border-border bg-card p-4 text-center space-y-1">
             <p className="text-2xl font-bold">{totalSize.toFixed(1)} KB</p>
-            <p className="text-xs text-muted-foreground">
-              {t("totalSize")}
-            </p>
+            <p className="text-xs text-muted-foreground">{t("totalSize")}</p>
           </div>
           <div className="rounded-xl border border-border bg-card p-4 text-center space-y-1">
-            <p className="text-2xl font-bold text-emerald-400">
-              {t("safeLabel")}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {t("restoreStatus")}
-            </p>
+            <p className="text-2xl font-bold text-emerald-400">{t("safeLabel")}</p>
+            <p className="text-xs text-muted-foreground">{t("restoreStatus")}</p>
           </div>
         </div>
 
@@ -125,73 +115,20 @@ export function BackupsPage() {
         <div className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
           <div className="px-5 py-3 flex items-center gap-2 border-b border-border bg-muted/20">
             <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="text-xs font-medium text-muted-foreground">
-              {t("backupHistory")}
-            </span>
+            <span className="text-xs font-medium text-muted-foreground">{t("backupHistory")}</span>
           </div>
           {backups.length === 0 && (
-            <div className="px-5 py-10 text-center text-muted-foreground text-sm">
-              {t("noData")}
-            </div>
+            <div className="px-5 py-10 text-center text-muted-foreground text-sm">{t("noData")}</div>
           )}
           {backups.map((backup, i) => (
-            <div
+            <BackupRow
               key={backup.id}
-              className="flex items-center justify-between px-5 py-4 hover:bg-accent/30 transition-colors group"
-            >
-              <div className="flex items-center gap-4">
-                <div
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                    i === 0 ? "bg-violet-500/20" : "bg-muted/60"
-                  }`}
-                >
-                  <ShieldCheck
-                    className={`w-4 h-4 ${i === 0 ? "text-violet-400" : "text-muted-foreground"}`}
-                  />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium">{new Date(backup.createdAt).toLocaleString()}</p>
-                    {i === 0 && (
-                      <Badge className="bg-violet-500/15 text-violet-400 border-0 text-[10px]">
-                        {t("latestTag")}
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">{backup.reason}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-muted-foreground">{backup.size}</span>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-xs gap-1 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 cursor-pointer"
-                    onClick={() => setRestoreTarget(backup)}
-                  >
-                    <RotateCcw className="w-3 h-3" />
-                    {t("restore")}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-7 w-7 text-muted-foreground cursor-pointer"
-                    onClick={() => handleDownload(backup)}
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-muted-foreground hover:text-destructive cursor-pointer"
-                    onClick={() => setDeleteTarget(backup)}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
-              </div>
-            </div>
+              backup={backup}
+              isLatest={i === 0}
+              onRestore={setRestoreTarget}
+              onDownload={handleDownload}
+              onDelete={setDeleteTarget}
+            />
           ))}
         </div>
       </div>
@@ -208,15 +145,13 @@ export function BackupsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>{t("deleteBackupConfirm")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("deleteBackupText")} ({deleteTarget && new Date(deleteTarget.createdAt).toLocaleString()})
+              {t("deleteBackupText")} (
+              {deleteTarget && new Date(deleteTarget.createdAt).toLocaleString()})
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-red-600 hover:bg-red-700 text-white"
-            >
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700 text-white">
               {t("delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -229,7 +164,8 @@ export function BackupsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>{t("restoreBackupConfirm")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("restoreBackupText")} ({restoreTarget && new Date(restoreTarget.createdAt).toLocaleString()})
+              {t("restoreBackupText")} (
+              {restoreTarget && new Date(restoreTarget.createdAt).toLocaleString()})
               {isTauri && ` (${t("adminCredentialsNote")})`}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -245,6 +181,73 @@ export function BackupsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </div>
+  );
+}
+
+interface BackupRowProps {
+  backup: Backup;
+  isLatest: boolean;
+  onRestore: (backup: Backup) => void;
+  onDownload: (backup: Backup) => void;
+  onDelete: (backup: Backup) => void;
+}
+
+function BackupRow({ backup, isLatest, onRestore, onDownload, onDelete }: BackupRowProps) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="flex items-center justify-between px-5 py-4 hover:bg-accent/30 transition-colors group">
+      <div className="flex items-center gap-4">
+        <div
+          className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+            isLatest ? "bg-violet-500/20" : "bg-muted/60"
+          }`}
+        >
+          <ShieldCheck className={`w-4 h-4 ${isLatest ? "text-violet-400" : "text-muted-foreground"}`} />
+        </div>
+        <div>
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-medium">{new Date(backup.createdAt).toLocaleString()}</p>
+            {isLatest && (
+              <Badge className="bg-violet-500/15 text-violet-400 border-0 text-[10px]">
+                {t("latestTag")}
+              </Badge>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5">{backup.reason}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-3">
+        <span className="text-xs text-muted-foreground">{backup.size}</span>
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs gap-1 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 cursor-pointer"
+            onClick={() => onRestore(backup)}
+          >
+            <RotateCcw className="w-3 h-3" />
+            {t("restore")}
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground cursor-pointer"
+            onClick={() => onDownload(backup)}
+          >
+            <Download className="w-3.5 h-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground hover:text-destructive cursor-pointer"
+            onClick={() => onDelete(backup)}
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

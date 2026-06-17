@@ -85,37 +85,51 @@ export function DashboardSidebar({ onRestoreClick, onActivateProfile }: Dashboar
         </div>
         <div className="space-y-2">
           {profiles.slice(0, 3).map((profile) => (
-            <div
+            <RecentProfileItem
               key={profile.id}
-              className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors text-xs"
-            >
-              <div className="truncate pr-2">
-                <p className="font-medium truncate">{profile.name}</p>
-                <p className="text-[10px] text-muted-foreground truncate">{profile.description}</p>
-              </div>
-              <div className="flex-shrink-0">
-                {profile.active ? (
-                  <Badge className="bg-emerald-500/15 text-emerald-400 border-0 text-[10px]">
-                    {t("active")}
-                  </Badge>
-                ) : (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-6 text-[10px] gap-1 px-2 cursor-pointer"
-                    onClick={() => onActivateProfile(profile.id, profile.name)}
-                  >
-                    <Zap className="w-2.5 h-2.5" />
-                    {t("confirm")}
-                  </Button>
-                )}
-              </div>
-            </div>
+              profile={profile}
+              onActivate={onActivateProfile}
+            />
           ))}
           {profiles.length === 0 && (
             <p className="text-xs text-muted-foreground text-center py-2">{t("noData")}</p>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+interface RecentProfileItemProps {
+  profile: any;
+  onActivate: (profileId: string, name: string) => void;
+}
+
+function RecentProfileItem({ profile, onActivate }: RecentProfileItemProps) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors text-xs">
+      <div className="truncate pr-2">
+        <p className="font-medium truncate">{profile.name}</p>
+        <p className="text-[10px] text-muted-foreground truncate">{profile.description}</p>
+      </div>
+      <div className="flex-shrink-0">
+        {profile.active ? (
+          <Badge className="bg-emerald-500/15 text-emerald-400 border-0 text-[10px]">
+            {t("active")}
+          </Badge>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-6 text-[10px] gap-1 px-2 cursor-pointer"
+            onClick={() => onActivate(profile.id, profile.name)}
+          >
+            <Zap className="w-2.5 h-2.5" />
+            {t("confirm")}
+          </Button>
+        )}
       </div>
     </div>
   );

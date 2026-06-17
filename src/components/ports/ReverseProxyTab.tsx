@@ -28,7 +28,6 @@ export function ReverseProxyTab({ onEditProxy, onDeleteProxy }: ReverseProxyTabP
   const {
     proxyRules,
     proxyRunningPort,
-    updateProxyRule,
     startProxyServer,
     stopProxyServer,
     settings,
@@ -267,91 +266,14 @@ export function ReverseProxyTab({ onEditProxy, onDeleteProxy }: ReverseProxyTabP
 
       {/* Proxy rules list */}
       <div className="space-y-2">
-        {proxyRules.map((rule) => {
-          return (
-            <div
-              key={rule.id}
-              className={`rounded-xl border border-border bg-card p-4 flex items-center justify-between hover:border-border/60 transition-colors group ${
-                !rule.enabled ? "opacity-50" : ""
-              }`}
-            >
-              <div className="flex items-center gap-4">
-                <Switch
-                  checked={rule.enabled}
-                  onCheckedChange={() => {
-                    updateProxyRule(rule.id, { enabled: !rule.enabled });
-                    toast.success(
-                      t("proxyRuleToggleSuccess", {
-                        status: !rule.enabled ? t("statusEnabled") : t("statusDisabled"),
-                      })
-                    );
-                  }}
-                  className="scale-90"
-                />
-                <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">
-                  <Globe className="w-3.5 h-3.5 text-muted-foreground" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono font-semibold text-xs text-indigo-400">
-                      {rule.domain}
-                      <span className="text-foreground font-normal">{rule.pathPrefix}</span>
-                    </span>
-                    <span className="text-muted-foreground text-[10px]">→</span>
-                    <span className="font-mono text-[10px] text-muted-foreground">
-                      {rule.targetAddress}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge
-                      className={`border-0 text-[9px] px-1.5 py-0 ${
-                        rule.targetType === "local"
-                          ? "bg-blue-500/10 text-blue-400"
-                          : "bg-purple-500/10 text-purple-400"
-                      }`}
-                    >
-                      {rule.targetType === "local" ? t("localPort") : t("externalProxy")}
-                    </Badge>
-                    {rule.targetType === "external" && rule.customResolver && (
-                      <Badge className="border-0 bg-slate-500/10 text-slate-400 text-[9px] px-1.5 py-0 font-mono">
-                        DNS: {rule.customResolver}
-                      </Badge>
-                    )}
-                    {rule.isRegex && (
-                      <Badge className="border-0 bg-yellow-500/10 text-yellow-400 text-[9px] px-1.5 py-0 font-mono">
-                        {t("regex")}
-                      </Badge>
-                    )}
-                    {rule.stripPrefix && (
-                      <Badge className="border-0 bg-emerald-500/10 text-emerald-400 text-[9px] px-1.5 py-0 font-mono">
-                        {t("stripPrefix")}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-muted-foreground hover:text-foreground cursor-pointer"
-                  onClick={() => onEditProxy(rule)}
-                >
-                  <Pencil className="w-3 h-3" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-muted-foreground hover:text-destructive cursor-pointer"
-                  onClick={() => onDeleteProxy(rule)}
-                >
-                  <Trash2 className="w-3 h-3" />
-                </Button>
-              </div>
-            </div>
-          );
-        })}
+        {proxyRules.map((rule) => (
+          <ProxyRuleRow
+            key={rule.id}
+            rule={rule}
+            onEdit={onEditProxy}
+            onDelete={onDeleteProxy}
+          />
+        ))}
 
         {proxyRules.length === 0 && (
           <div className="text-center py-16 text-muted-foreground bg-card rounded-xl border border-border">
@@ -359,6 +281,100 @@ export function ReverseProxyTab({ onEditProxy, onDeleteProxy }: ReverseProxyTabP
             <p className="text-xs">{t("noProxyRules")}</p>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+interface ProxyRuleRowProps {
+  rule: ProxyRule;
+  onEdit: (rule: ProxyRule) => void;
+  onDelete: (rule: ProxyRule) => void;
+}
+
+function ProxyRuleRow({ rule, onEdit, onDelete }: ProxyRuleRowProps) {
+  const { updateProxyRule } = useAppStore();
+  const { t } = useTranslation();
+
+  return (
+    <div
+      className={`rounded-xl border border-border bg-card p-4 flex items-center justify-between hover:border-border/60 transition-colors group ${
+        !rule.enabled ? "opacity-50" : ""
+      }`}
+    >
+      <div className="flex items-center gap-4">
+        <Switch
+          checked={rule.enabled}
+          onCheckedChange={() => {
+            updateProxyRule(rule.id, { enabled: !rule.enabled });
+            toast.success(
+              t("proxyRuleToggleSuccess", {
+                status: !rule.enabled ? t("statusEnabled") : t("statusDisabled"),
+              })
+            );
+          }}
+          className="scale-90"
+        />
+        <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">
+          <Globe className="w-3.5 h-3.5 text-muted-foreground" />
+        </div>
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="font-mono font-semibold text-xs text-indigo-400">
+              {rule.domain}
+              <span className="text-foreground font-normal">{rule.pathPrefix}</span>
+            </span>
+            <span className="text-muted-foreground text-[10px]">→</span>
+            <span className="font-mono text-[10px] text-muted-foreground">
+              {rule.targetAddress}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 mt-1">
+            <Badge
+              className={`border-0 text-[9px] px-1.5 py-0 ${
+                rule.targetType === "local"
+                  ? "bg-blue-500/10 text-blue-400"
+                  : "bg-purple-500/10 text-purple-400"
+              }`}
+            >
+              {rule.targetType === "local" ? t("localPort") : t("externalProxy")}
+            </Badge>
+            {rule.targetType === "external" && rule.customResolver && (
+              <Badge className="border-0 bg-slate-500/10 text-slate-400 text-[9px] px-1.5 py-0 font-mono">
+                DNS: {rule.customResolver}
+              </Badge>
+            )}
+            {rule.isRegex && (
+              <Badge className="border-0 bg-yellow-500/10 text-yellow-400 text-[9px] px-1.5 py-0 font-mono">
+                {t("regex")}
+              </Badge>
+            )}
+            {rule.stripPrefix && (
+              <Badge className="border-0 bg-emerald-500/10 text-emerald-400 text-[9px] px-1.5 py-0 font-mono">
+                {t("stripPrefix")}
+              </Badge>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 text-muted-foreground hover:text-foreground cursor-pointer"
+          onClick={() => onEdit(rule)}
+        >
+          <Pencil className="w-3 h-3" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 text-muted-foreground hover:text-destructive cursor-pointer"
+          onClick={() => onDelete(rule)}
+        >
+          <Trash2 className="w-3 h-3" />
+        </Button>
       </div>
     </div>
   );

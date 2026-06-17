@@ -23,11 +23,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useAppStore, type HostEntry } from "@/store/AppStore";
+import { useAppStore, type HostEntry, type HostGroup } from "@/store/AppStore";
 import { HostFormDialog } from "@/components/hosts/HostFormDialog";
 import { useTranslation } from "@/i18n/translations";
 import { Plus, Search, Pencil, Trash2, Filter, Globe, PowerOff } from "lucide-react";
-
 
 const sourceColors: Record<HostEntry["source"], string> = {
   manual: "bg-slate-500/15 text-slate-400",
@@ -35,7 +34,7 @@ const sourceColors: Record<HostEntry["source"], string> = {
 };
 
 export function HostsPage() {
-  const { hosts, groups, updateHost, deleteHost, disableAllHosts } = useAppStore();
+  const { hosts, groups, deleteHost, disableAllHosts } = useAppStore();
   const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [filterGroup, setFilterGroup] = useState<string | null>(null);
@@ -67,8 +66,6 @@ export function HostsPage() {
     setEditTarget(host);
     setFormOpen(true);
   };
-
-  const confirmDelete = (host: HostEntry) => setDeleteTarget(host);
 
   const handleDelete = () => {
     if (!deleteTarget) return;
@@ -153,13 +150,27 @@ export function HostsPage() {
           <Table>
             <TableHeader className="sticky top-0 bg-background border-b border-border z-20">
               <TableRow>
-                <TableHead className="sticky left-0 top-0 bg-background z-30 text-left text-xs text-muted-foreground font-medium px-6 py-3 w-10 border-r border-border">{t("on")}</TableHead>
-                <TableHead className="text-left text-xs text-muted-foreground font-medium px-3 py-3">{t("domain")}</TableHead>
-                <TableHead className="text-left text-xs text-muted-foreground font-medium px-3 py-3">{t("ipAddress")}</TableHead>
-                <TableHead className="text-left text-xs text-muted-foreground font-medium px-3 py-3">{t("group")}</TableHead>
-                <TableHead className="text-left text-xs text-muted-foreground font-medium px-3 py-3">{t("source")}</TableHead>
-                <TableHead className="text-left text-xs text-muted-foreground font-medium px-3 py-3">{t("description")}</TableHead>
-                <TableHead className="sticky right-0 top-0 bg-background z-30 text-right text-xs text-muted-foreground font-medium px-6 py-3 border-l border-border">{t("actions")}</TableHead>
+                <TableHead className="sticky left-0 top-0 bg-background z-30 text-left text-xs text-muted-foreground font-medium px-6 py-3 w-10 border-r border-border">
+                  {t("on")}
+                </TableHead>
+                <TableHead className="text-left text-xs text-muted-foreground font-medium px-3 py-3">
+                  {t("domain")}
+                </TableHead>
+                <TableHead className="text-left text-xs text-muted-foreground font-medium px-3 py-3">
+                  {t("ipAddress")}
+                </TableHead>
+                <TableHead className="text-left text-xs text-muted-foreground font-medium px-3 py-3">
+                  {t("group")}
+                </TableHead>
+                <TableHead className="text-left text-xs text-muted-foreground font-medium px-3 py-3">
+                  {t("source")}
+                </TableHead>
+                <TableHead className="text-left text-xs text-muted-foreground font-medium px-3 py-3">
+                  {t("description")}
+                </TableHead>
+                <TableHead className="sticky right-0 top-0 bg-background z-30 text-right text-xs text-muted-foreground font-medium px-6 py-3 border-l border-border">
+                  {t("actions")}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -174,67 +185,13 @@ export function HostsPage() {
               {filtered.map((host) => {
                 const group = groups.find((g) => g.id === host.groupId);
                 return (
-                  <TableRow
+                  <HostTableRow
                     key={host.id}
-                    className={`group hover:bg-accent/30 transition-colors ${!host.enabled ? "opacity-50" : ""}`}
-                  >
-                    <TableCell className="sticky left-0 bg-background group-hover:bg-[color-mix(in_srgb,var(--accent)_30%,var(--background))] transition-colors px-6 py-3 border-r border-border z-10">
-                      <Switch
-                        checked={host.enabled}
-                        onCheckedChange={() => {
-                          updateHost(host.id, { enabled: !host.enabled });
-                          toast.success(`${host.domain} ${!host.enabled ? t("active") : t("inactive")}`);
-                        }}
-                        className="scale-90"
-                      />
-                    </TableCell>
-                    <TableCell className="px-3 py-3">
-                      <span className="font-mono text-sm font-medium text-foreground">{host.domain}</span>
-                    </TableCell>
-                    <TableCell className="px-3 py-3">
-                      <span className="font-mono text-xs text-muted-foreground">{host.ip}</span>
-                    </TableCell>
-                    <TableCell className="px-3 py-3">
-                      {group ? (
-                        <span
-                          className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium"
-                          style={{ backgroundColor: group.color + "22", color: group.color }}
-                        >
-                          {group.name}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-muted-foreground/50">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="px-3 py-3">
-                      <Badge className={`text-[10px] border-0 ${sourceColors[host.source]}`}>
-                        {t(host.source)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="px-3 py-3">
-                      <span className="text-xs text-muted-foreground">{host.description ?? "—"}</span>
-                    </TableCell>
-                    <TableCell className="sticky right-0 bg-background group-hover:bg-[color-mix(in_srgb,var(--accent)_30%,var(--background))] transition-colors px-6 py-3 border-l border-border z-10">
-                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                          onClick={() => openEdit(host)}
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                          onClick={() => confirmDelete(host)}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                    host={host}
+                    group={group}
+                    onEdit={openEdit}
+                    onDelete={setDeleteTarget}
+                  />
                 );
               })}
             </TableBody>
@@ -262,10 +219,7 @@ export function HostsPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              onClick={handleDelete}
-            >
+            <AlertDialogAction variant="destructive" onClick={handleDelete}>
               {t("delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -276,9 +230,7 @@ export function HostsPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t("disableAllConfirm")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("disableAllConfirmText")}
-            </AlertDialogDescription>
+            <AlertDialogDescription>{t("disableAllConfirmText")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
@@ -296,5 +248,80 @@ export function HostsPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  );
+}
+
+interface HostTableRowProps {
+  host: HostEntry;
+  group: HostGroup | undefined;
+  onEdit: (host: HostEntry) => void;
+  onDelete: (host: HostEntry) => void;
+}
+
+function HostTableRow({ host, group, onEdit, onDelete }: HostTableRowProps) {
+  const { updateHost } = useAppStore();
+  const { t } = useTranslation();
+
+  return (
+    <TableRow
+      className={`group hover:bg-accent/30 transition-colors ${!host.enabled ? "opacity-50" : ""}`}
+    >
+      <TableCell className="sticky left-0 bg-background group-hover:bg-[color-mix(in_srgb,var(--accent)_30%,var(--background))] transition-colors px-6 py-3 border-r border-border z-10">
+        <Switch
+          checked={host.enabled}
+          onCheckedChange={() => {
+            updateHost(host.id, { enabled: !host.enabled });
+            toast.success(`${host.domain} ${!host.enabled ? t("active") : t("inactive")}`);
+          }}
+          className="scale-90"
+        />
+      </TableCell>
+      <TableCell className="px-3 py-3">
+        <span className="font-mono text-sm font-medium text-foreground">{host.domain}</span>
+      </TableCell>
+      <TableCell className="px-3 py-3">
+        <span className="font-mono text-xs text-muted-foreground">{host.ip}</span>
+      </TableCell>
+      <TableCell className="px-3 py-3">
+        {group ? (
+          <span
+            className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium"
+            style={{ backgroundColor: group.color + "22", color: group.color }}
+          >
+            {group.name}
+          </span>
+        ) : (
+          <span className="text-xs text-muted-foreground/50">—</span>
+        )}
+      </TableCell>
+      <TableCell className="px-3 py-3">
+        <Badge className={`text-[10px] border-0 ${sourceColors[host.source]}`}>
+          {t(host.source)}
+        </Badge>
+      </TableCell>
+      <TableCell className="px-3 py-3">
+        <span className="text-xs text-muted-foreground">{host.description ?? "—"}</span>
+      </TableCell>
+      <TableCell className="sticky right-0 bg-background group-hover:bg-[color-mix(in_srgb,var(--accent)_30%,var(--background))] transition-colors px-6 py-3 border-l border-border z-10">
+        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+            onClick={() => onEdit(host)}
+          >
+            <Pencil className="w-3.5 h-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+            onClick={() => onDelete(host)}
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
   );
 }

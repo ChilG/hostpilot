@@ -12,7 +12,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useAppStore, type HostGroup } from "@/store/AppStore";
+import { useAppStore, type HostGroup, type HostEntry } from "@/store/AppStore";
 import { GroupFormDialog } from "@/components/groups/GroupFormDialog";
 import { useTranslation } from "@/i18n/translations";
 import { Plus, Pencil, Trash2, Layers } from "lucide-react";
@@ -42,9 +42,8 @@ export function GroupsPage() {
     if (!deleteTarget) return;
     const assignedCount = hosts.filter((h) => h.groupId === deleteTarget.id).length;
     deleteGroup(deleteTarget.id);
-    const unassignedMsg = assignedCount > 0
-      ? t("unassignedHostsDetail", { count: assignedCount })
-      : "";
+    const unassignedMsg =
+      assignedCount > 0 ? t("unassignedHostsDetail", { count: assignedCount }) : "";
     toast.success(t("groupDeletedToast", { name: deleteTarget.name, unassignedMsg }));
     setDeleteTarget(undefined);
   };
@@ -67,93 +66,15 @@ export function GroupsPage() {
       />
       <div className="flex-1 overflow-y-auto p-6">
         <div className="grid grid-cols-2 gap-4">
-          {groups.map((group) => {
-            const groupHosts = hosts.filter((h) => h.groupId === group.id);
-            const enabledCount = groupHosts.filter((h) => h.enabled).length;
-            return (
-              <div
-                key={group.id}
-                className="rounded-xl border border-border bg-card p-5 space-y-4 hover:border-border/80 transition-colors group"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-9 h-9 rounded-lg flex items-center justify-center"
-                      style={{ backgroundColor: group.color + "22" }}
-                    >
-                      <Layers className="w-4.5 h-4.5" style={{ color: group.color }} />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-sm">{group.name}</p>
-                      {group.description && (
-                        <p className="text-xs text-muted-foreground mt-0.5">{group.description}</p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                      onClick={() => openEdit(group)}
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                      onClick={() => setDeleteTarget(group)}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Color swatch */}
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-4 h-4 rounded-full border-2 border-white/10"
-                    style={{ backgroundColor: group.color }}
-                  />
-                  <span className="text-xs font-mono text-muted-foreground">{group.color}</span>
-                </div>
-
-                {/* Stats */}
-                <div className="flex items-center gap-4 pt-4 pl-2 border-t border-border">
-                  <div>
-                    <p className="text-lg font-bold leading-none">{groupHosts.length}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{t("totalHosts")}</p>
-                  </div>
-                  <div>
-                    <p className="text-lg font-bold leading-none text-emerald-500">{enabledCount}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{t("enabled")}</p>
-                  </div>
-                  <div>
-                    <p className="text-lg font-bold leading-none text-muted-foreground">{groupHosts.length - enabledCount}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{t("inactive")}</p>
-                  </div>
-                </div>
-
-                {/* Host list */}
-                {groupHosts.length > 0 && (
-                  <div className="space-y-1">
-                    {groupHosts.map((h) => (
-                      <div
-                        key={h.id}
-                        className="flex items-center justify-between px-2.5 py-1.5 rounded-md bg-muted/40"
-                      >
-                        <span className="font-mono text-xs text-foreground/80">{h.domain}</span>
-                        <span
-                          className={`w-1.5 h-1.5 rounded-full ${h.enabled ? "bg-emerald-500" : "bg-muted-foreground/30"}`}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+          {groups.map((group) => (
+            <GroupCard
+              key={group.id}
+              group={group}
+              hosts={hosts}
+              onEdit={openEdit}
+              onDelete={setDeleteTarget}
+            />
+          ))}
 
           {/* Add new group placeholder */}
           <button
@@ -182,21 +103,121 @@ export function GroupsPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t("deleteGroupConfirm")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("deleteGroupText")}
-            </AlertDialogDescription>
+            <AlertDialogDescription>{t("deleteGroupText")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              onClick={handleDelete}
-            >
+            <AlertDialogAction variant="destructive" onClick={handleDelete}>
               {t("delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </div>
+  );
+}
+
+interface GroupCardProps {
+  group: HostGroup;
+  hosts: HostEntry[];
+  onEdit: (group: HostGroup) => void;
+  onDelete: (group: HostGroup) => void;
+}
+
+function GroupCard({ group, hosts, onEdit, onDelete }: GroupCardProps) {
+  const { t } = useTranslation();
+  const groupHosts = hosts.filter((h) => h.groupId === group.id);
+  const enabledCount = groupHosts.filter((h) => h.enabled).length;
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-5 space-y-4 hover:border-border/80 transition-colors group">
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-3">
+          <div
+            className="w-9 h-9 rounded-lg flex items-center justify-center"
+            style={{ backgroundColor: group.color + "22" }}
+          >
+            <Layers className="w-4.5 h-4.5" style={{ color: group.color }} />
+          </div>
+          <div>
+            <p className="font-semibold text-sm">{group.name}</p>
+            {group.description && (
+              <p className="text-xs text-muted-foreground mt-0.5">{group.description}</p>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+            onClick={() => onEdit(group)}
+          >
+            <Pencil className="w-3.5 h-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+            onClick={() => onDelete(group)}
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Color swatch */}
+      <div className="flex items-center gap-2">
+        <div
+          className="w-4 h-4 rounded-full border-2 border-white/10"
+          style={{ backgroundColor: group.color }}
+        />
+        <span className="text-xs font-mono text-muted-foreground">{group.color}</span>
+      </div>
+
+      {/* Stats */}
+      <div className="flex items-center gap-4 pt-4 pl-2 border-t border-border">
+        <div>
+          <p className="text-lg font-bold leading-none">{groupHosts.length}</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">{t("totalHosts")}</p>
+        </div>
+        <div>
+          <p className="text-lg font-bold leading-none text-emerald-500">{enabledCount}</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">{t("enabled")}</p>
+        </div>
+        <div>
+          <p className="text-lg font-bold leading-none text-muted-foreground">
+            {groupHosts.length - enabledCount}
+          </p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">{t("inactive")}</p>
+        </div>
+      </div>
+
+      {/* Host list */}
+      {groupHosts.length > 0 && (
+        <div className="space-y-1">
+          {groupHosts.map((h) => (
+            <GroupHostRow key={h.id} host={h} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface GroupHostRowProps {
+  host: HostEntry;
+}
+
+function GroupHostRow({ host }: GroupHostRowProps) {
+  return (
+    <div className="flex items-center justify-between px-2.5 py-1.5 rounded-md bg-muted/40">
+      <span className="font-mono text-xs text-foreground/80">{host.domain}</span>
+      <span
+        className={`w-1.5 h-1.5 rounded-full ${
+          host.enabled ? "bg-emerald-500" : "bg-muted-foreground/30"
+        }`}
+      />
     </div>
   );
 }
