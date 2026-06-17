@@ -14,6 +14,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { invoke } from "@tauri-apps/api/core";
 import { OnboardingModal } from "@/components/layout/OnboardingModal";
 import { CommandPalette } from "@/components/layout/CommandPalette";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 const pageMap: Record<Page, React.ComponentType> = {
   dashboard: DashboardPage,
@@ -94,7 +95,9 @@ function App() {
 
   return (
     <AppStoreProvider>
-      <AppContent />
+      <ErrorBoundary>
+        <AppContent />
+      </ErrorBoundary>
       <Toaster position="bottom-right" theme="dark" richColors />
     </AppStoreProvider>
   );
