@@ -137,7 +137,7 @@ fi
 
 echo -e "\n${GREEN}Version bump completed!${NC}"
 echo -e "${BLUE}--- GIT DIFF ---${NC}"
-git diff package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml
+git --no-pager diff package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml
 
 # Commit and tag locally
 echo -e "${BLUE}----------------${NC}"
