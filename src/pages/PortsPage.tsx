@@ -34,7 +34,8 @@ import {
   Globe,
   ShieldAlert,
   ShieldCheck,
-  Lock
+  Lock,
+  X
 } from "lucide-react";
 
 export function PortsPage() {
@@ -74,6 +75,17 @@ export function PortsPage() {
   const [proxyPortInput, setProxyPortInput] = useState<number>(8080);
   const [isStarting, setIsStarting] = useState(false);
   const [isInstallingCa, setIsInstallingCa] = useState(false);
+  const [showFirefoxHelp, setShowFirefoxHelp] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("hostpilot_hide_firefox_help") !== "true";
+    }
+    return true;
+  });
+
+  const dismissFirefoxHelp = () => {
+    localStorage.setItem("hostpilot_hide_firefox_help", "true");
+    setShowFirefoxHelp(false);
+  };
 
   const runningPorts = ports.filter((p) => p.status === "running").length;
   const runningProxyRules = proxyRules.filter((r) => r.enabled).length;
@@ -527,10 +539,19 @@ export function PortsPage() {
               )}
 
               {/* Firefox Specific Help Accordion/Tip */}
-              <div className="text-[10px] bg-slate-500/5 border border-border p-3 rounded-lg space-y-1">
-                <span className="font-semibold block text-indigo-400">{t("firefoxHelpTitle")}</span>
-                <p className="text-muted-foreground leading-relaxed">{t("firefoxHelpDesc")}</p>
-              </div>
+              {showFirefoxHelp && (
+                <div className="relative text-[10px] bg-slate-500/5 border border-border p-3 rounded-lg space-y-1">
+                  <span className="font-semibold block text-indigo-400">{t("firefoxHelpTitle")}</span>
+                  <p className="text-muted-foreground leading-relaxed pr-6">{t("firefoxHelpDesc")}</p>
+                  <button
+                    onClick={dismissFirefoxHelp}
+                    className="absolute top-2.5 right-2.5 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors cursor-pointer"
+                    aria-label="Dismiss"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Proxy rules list */}
