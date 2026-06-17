@@ -37,10 +37,8 @@ fn log_proxy_error(error_msg: &str) {
 
 fn get_proxy_rules_for_domain(app_handle: &tauri::AppHandle, target_domain: &str) -> Result<Vec<ProxyRule>, String> {
     let conn = crate::db::get_connection(app_handle)?;
-    let mut stmt = conn.prepare(
-        "SELECT id, domain, path_prefix, target_type, target_address, custom_resolver, enabled, strip_prefix, is_regex, created_at, updated_at \
-         FROM proxy_rules WHERE domain = ?1 AND enabled = 1 ORDER BY is_regex ASC, length(path_prefix) DESC;"
-    ).map_err(|e| e.to_string())?;
+    let mut stmt = conn.prepare(include_str!("../queries/select_active_proxy_rules_by_domain.sql"))
+        .map_err(|e| e.to_string())?;
     
     let rules_iter = stmt.query_map([target_domain], |row| {
         let enabled_val: i32 = row.get(6)?;
