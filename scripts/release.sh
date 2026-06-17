@@ -34,12 +34,8 @@ fi
 
 # Check for uncommitted changes
 if ! git diff-index --quiet HEAD --; then
-    echo -e "${YELLOW}Warning: You have uncommitted changes in your workspace.${NC}"
-    read -p "Do you want to proceed anyway? (y/N): " proceed
-    if [[ ! "$proceed" =~ ^[yY]$ ]]; then
-        echo -e "${RED}Aborting release process.${NC}"
-        exit 1
-    fi
+    echo -e "${RED}Error: You have uncommitted changes in your workspace. Please commit or stash them before releasing.${NC}"
+    exit 1
 fi
 
 # Calculate version options using Node.js
@@ -150,9 +146,13 @@ if [ -f src-tauri/Cargo.lock ]; then
     git add src-tauri/Cargo.lock
 fi
 
-git commit -m "chore(release): v$NEW_VERSION"
+git commit -m "chore: version bump $NEW_VERSION"
 git tag -a "v$NEW_VERSION" -m "v$NEW_VERSION"
 echo -e "${GREEN}Created commit and tag v$NEW_VERSION locally.${NC}"
-echo -e "${YELLOW}Remember to push later using:${NC}"
-echo -e "  git push origin master --tags"
+
+# Push immediately to origin
+CURRENT_BRANCH=$(git branch --show-current)
+echo -e "${BLUE}Pushing branch '$CURRENT_BRANCH' and tags to origin...${NC}"
+git push origin "$CURRENT_BRANCH" --tags
+echo -e "${GREEN}Successfully pushed version bump and tags to origin.${NC}"
 
