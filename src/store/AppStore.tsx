@@ -3,17 +3,17 @@ import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 import { translations } from "@/i18n/translations";
 import {
-  demoHosts,
-  demoGroups,
-  demoProfiles,
-  demoPorts,
-  demoBackups,
+  initialHosts,
+  initialGroups,
+  initialProfiles,
+  initialPorts,
+  initialBackups,
   type HostEntry,
   type HostGroup,
   type HostProfile,
   type PortRule,
   type Backup,
-} from "@/data/demo";
+} from "@/data/initial";
 
 // Helper to detect if running inside Tauri
 export const isTauri =
@@ -271,11 +271,11 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
             setProxyRules(config.proxyRules || []);
           } else {
             // Seed defaults first time
-            setHosts(demoHosts);
-            setGroups(demoGroups);
-            setProfiles(demoProfiles);
-            setPorts(demoPorts);
-            setBackups(demoBackups);
+            setHosts(initialHosts);
+            setGroups(initialGroups);
+            setProfiles(initialProfiles);
+            setPorts(initialPorts);
+            setBackups(initialBackups);
             setOnboarded(false);
             let initialSettings = defaultSettings;
             let lang: "en" | "th" = "en";
