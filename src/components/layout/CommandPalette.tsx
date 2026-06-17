@@ -115,6 +115,9 @@ export function CommandPalette({ open, onOpenChange, onNavigate }: CommandPalett
               setQuery(e.target.value);
               setSelectedIndex(0);
             }}
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck="false"
           />
           <Badge className="bg-muted text-muted-foreground text-[10px] font-mono border-0 px-1.5 py-0.5 rounded">
             ESC

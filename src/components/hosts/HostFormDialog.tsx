@@ -121,7 +121,7 @@ export function HostFormDialog({ open, onOpenChange, mode, host, onSave }: Props
               id="host-domain"
               placeholder={t("domainPlaceholder")}
               value={form.domain}
-              onChange={(e) => setForm((f) => ({ ...f, domain: e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, domain: e.target.value.toLowerCase() }))}
               className={errors.domain ? "border-red-500" : ""}
             />
             {errors.domain && <p className="text-xs text-red-400">{errors.domain}</p>}
@@ -133,7 +133,7 @@ export function HostFormDialog({ open, onOpenChange, mode, host, onSave }: Props
               id="host-ip"
               placeholder={t("ipPlaceholder")}
               value={form.ip}
-              onChange={(e) => setForm((f) => ({ ...f, ip: e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, ip: e.target.value.toLowerCase() }))}
               className={errors.ip ? "border-red-500" : ""}
             />
             {errors.ip && <p className="text-xs text-red-400">{errors.ip}</p>}

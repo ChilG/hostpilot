@@ -138,7 +138,7 @@ export function PortFormDialog({ open, onOpenChange, mode, rule, onSave }: Props
                 id="port-domain"
                 placeholder={t("domainPlaceholder")}
                 value={form.domain}
-                onChange={(e) => setForm((f) => ({ ...f, domain: e.target.value }))}
+                onChange={(e) => setForm((f) => ({ ...f, domain: e.target.value.toLowerCase() }))}
                 className={errors.domain ? "border-red-500" : ""}
               />
             )}
@@ -182,7 +182,7 @@ export function PortFormDialog({ open, onOpenChange, mode, rule, onSave }: Props
               id="port-target"
               placeholder={t("targetHostPlaceholder")}
               value={form.targetHost}
-              onChange={(e) => setForm((f) => ({ ...f, targetHost: e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, targetHost: e.target.value.toLowerCase() }))}
             />
           </div>
         </div>
