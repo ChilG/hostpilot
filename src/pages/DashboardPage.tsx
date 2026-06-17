@@ -446,7 +446,7 @@ export function DashboardPage() {
 
       {/* Quick Apply Confirmation Dialog */}
       <AlertDialog open={quickApplyConfirmOpen} onOpenChange={setQuickApplyConfirmOpen}>
-        <AlertDialogContent className="dark">
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t("applyConfirmation")}</AlertDialogTitle>
             <AlertDialogDescription>
@@ -464,7 +464,7 @@ export function DashboardPage() {
 
       {/* Restore Backup Confirmation Dialog */}
       <AlertDialog open={restoreConfirmOpen} onOpenChange={setRestoreConfirmOpen}>
-        <AlertDialogContent className="dark">
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t("restoreBackupConfirm")}</AlertDialogTitle>
             <AlertDialogDescription>

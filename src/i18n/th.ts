@@ -128,6 +128,11 @@ export const th = {
   deletePortText: "คุณแน่ใจหรือไม่ว่าต้องการลบประวัติหรือกฎพอร์ตการเชื่อมต่อเว็บนี้?",
   selectDomain: "เลือกโดเมน",
   customOption: "กำหนดเอง...",
+  searchDomain: "ค้นหาโดเมน...",
+  uncategorized: "ไม่มีกลุ่ม",
+  customDomain: "โดเมนกำหนดเอง",
+  noDomainsFound: "ไม่พบโดเมน",
+  createCustom: 'ใช้โดเมนกำหนดเอง: "{domain}"',
 
   // Backups Page
   createBackup: "สำรองข้อมูลใหม่",

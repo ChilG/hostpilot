@@ -179,7 +179,7 @@ export function GroupsPage() {
       />
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(undefined)}>
-        <AlertDialogContent className="dark">
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t("deleteGroupConfirm")}</AlertDialogTitle>
             <AlertDialogDescription>

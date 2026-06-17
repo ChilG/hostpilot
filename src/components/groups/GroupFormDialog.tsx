@@ -84,7 +84,7 @@ export function GroupFormDialog({ open, onOpenChange, mode, group, onSave }: Pro
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm dark">
+      <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>{mode === "create" ? t("addGroup") : t("editGroup")}</DialogTitle>
         </DialogHeader>

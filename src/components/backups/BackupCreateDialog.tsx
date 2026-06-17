@@ -71,7 +71,7 @@ export function BackupCreateDialog({ open, onOpenChange, onSave }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm dark">
+      <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>{t("createBackup")}</DialogTitle>
         </DialogHeader>

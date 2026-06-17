@@ -204,7 +204,7 @@ export function BackupsPage() {
 
       {/* Delete confirm */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(undefined)}>
-        <AlertDialogContent className="dark">
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t("deleteBackupConfirm")}</AlertDialogTitle>
             <AlertDialogDescription>
@@ -225,7 +225,7 @@ export function BackupsPage() {
 
       {/* Restore confirm */}
       <AlertDialog open={!!restoreTarget} onOpenChange={(o) => !o && setRestoreTarget(undefined)}>
-        <AlertDialogContent className="dark">
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t("restoreBackupConfirm")}</AlertDialogTitle>
             <AlertDialogDescription>

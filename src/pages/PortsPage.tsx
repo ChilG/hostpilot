@@ -241,7 +241,7 @@ export function PortsPage() {
       />
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(undefined)}>
-        <AlertDialogContent className="dark">
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t("deletePortConfirm")}</AlertDialogTitle>
             <AlertDialogDescription>

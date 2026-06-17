@@ -128,6 +128,11 @@ export const en = {
   deletePortText: "Are you sure you want to delete this web port reference?",
   selectDomain: "Select domain",
   customOption: "Custom...",
+  searchDomain: "Search domain...",
+  uncategorized: "Uncategorized",
+  customDomain: "Custom Domain",
+  noDomainsFound: "No domains found.",
+  createCustom: 'Use custom domain: "{domain}"',
 
   // Backups Page
   createBackup: "Create Backup",

@@ -100,7 +100,7 @@ export function HostsPage() {
       <div className="flex-1 overflow-hidden flex flex-col">
         {/* Filter bar */}
         <div className="flex items-center gap-3 px-6 py-3 border-b border-border bg-background/60">
-          <div className="relative flex-1 max-w-xs">
+          <div className="relative flex-shrink-0 w-full max-w-[240px]">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
             <Input
               className="pl-8 h-8 text-xs"
@@ -109,7 +109,7 @@ export function HostsPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar flex-1 min-w-0">
             <Filter className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
             <span className="text-xs text-muted-foreground flex-shrink-0">{t("group")}:</span>
             <button
@@ -244,7 +244,7 @@ export function HostsPage() {
       />
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(undefined)}>
-        <AlertDialogContent className="dark">
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t("deleteHostConfirm")}</AlertDialogTitle>
             <AlertDialogDescription>
@@ -264,7 +264,7 @@ export function HostsPage() {
       </AlertDialog>
 
       <AlertDialog open={disableAllConfirmOpen} onOpenChange={setDisableAllConfirmOpen}>
-        <AlertDialogContent className="dark">
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t("disableAllConfirm")}</AlertDialogTitle>
             <AlertDialogDescription>

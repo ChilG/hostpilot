@@ -109,7 +109,7 @@ export function HostFormDialog({ open, onOpenChange, mode, host, onSave }: Props
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md dark">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{mode === "create" ? t("addHost") : t("editHost")}</DialogTitle>
         </DialogHeader>

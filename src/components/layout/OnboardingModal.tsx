@@ -57,7 +57,7 @@ export function OnboardingModal({ open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md dark p-0 overflow-hidden border-border bg-card">
+      <DialogContent className="sm:max-w-md p-0 overflow-hidden border-border bg-card">
         {/* Top Header Graphic */}
         <div className="h-32 bg-gradient-to-br from-indigo-600 via-purple-600 to-indigo-800 flex items-center justify-center relative select-none">
           <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center shadow-lg border border-white/20">

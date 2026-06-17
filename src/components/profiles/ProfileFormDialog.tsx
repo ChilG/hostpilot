@@ -144,7 +144,7 @@ export function ProfileFormDialog({ open, onOpenChange, mode, profile, onSave }:
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md dark">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{mode === "create" ? t("addProfile") : t("editProfile")}</DialogTitle>
         </DialogHeader>
