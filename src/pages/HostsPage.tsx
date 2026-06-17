@@ -6,6 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -19,6 +27,7 @@ import { useAppStore, type HostEntry } from "@/store/AppStore";
 import { HostFormDialog } from "@/components/hosts/HostFormDialog";
 import { useTranslation } from "@/i18n/translations";
 import { Plus, Search, Pencil, Trash2, Filter, Globe, PowerOff } from "lucide-react";
+
 
 const sourceColors: Record<HostEntry["source"], string> = {
   manual: "bg-slate-500/15 text-slate-400",
@@ -141,35 +150,35 @@ export function HostsPage() {
 
         {/* Table */}
         <div className="flex-1 overflow-y-auto">
-          <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-background border-b border-border">
-              <tr>
-                <th className="text-left text-xs text-muted-foreground font-medium px-6 py-3 w-10">On</th>
-                <th className="text-left text-xs text-muted-foreground font-medium px-3 py-3">{t("domain")}</th>
-                <th className="text-left text-xs text-muted-foreground font-medium px-3 py-3">{t("ipAddress")}</th>
-                <th className="text-left text-xs text-muted-foreground font-medium px-3 py-3">{t("group")}</th>
-                <th className="text-left text-xs text-muted-foreground font-medium px-3 py-3">Source</th>
-                <th className="text-left text-xs text-muted-foreground font-medium px-3 py-3">{t("description")}</th>
-                <th className="text-right text-xs text-muted-foreground font-medium px-6 py-3">{t("actions")}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
+          <Table>
+            <TableHeader className="sticky top-0 bg-background border-b border-border z-20">
+              <TableRow>
+                <TableHead className="sticky left-0 top-0 bg-background z-30 text-left text-xs text-muted-foreground font-medium px-6 py-3 w-10 border-r border-border">On</TableHead>
+                <TableHead className="text-left text-xs text-muted-foreground font-medium px-3 py-3">{t("domain")}</TableHead>
+                <TableHead className="text-left text-xs text-muted-foreground font-medium px-3 py-3">{t("ipAddress")}</TableHead>
+                <TableHead className="text-left text-xs text-muted-foreground font-medium px-3 py-3">{t("group")}</TableHead>
+                <TableHead className="text-left text-xs text-muted-foreground font-medium px-3 py-3">Source</TableHead>
+                <TableHead className="text-left text-xs text-muted-foreground font-medium px-3 py-3">{t("description")}</TableHead>
+                <TableHead className="sticky right-0 top-0 bg-background z-30 text-right text-xs text-muted-foreground font-medium px-6 py-3 border-l border-border">{t("actions")}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="text-center py-12 text-muted-foreground text-sm">
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-12 text-muted-foreground text-sm">
                     <Globe className="w-8 h-8 mx-auto mb-2 opacity-20" />
                     {t("noData")}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
               {filtered.map((host) => {
                 const group = groups.find((g) => g.id === host.groupId);
                 return (
-                  <tr
+                  <TableRow
                     key={host.id}
                     className={`group hover:bg-accent/30 transition-colors ${!host.enabled ? "opacity-50" : ""}`}
                   >
-                    <td className="px-6 py-3">
+                    <TableCell className="sticky left-0 bg-background group-hover:bg-[color-mix(in_srgb,var(--accent)_30%,var(--background))] transition-colors px-6 py-3 border-r border-border z-10">
                       <Switch
                         checked={host.enabled}
                         onCheckedChange={() => {
@@ -178,14 +187,14 @@ export function HostsPage() {
                         }}
                         className="scale-90"
                       />
-                    </td>
-                    <td className="px-3 py-3">
+                    </TableCell>
+                    <TableCell className="px-3 py-3">
                       <span className="font-mono text-sm font-medium text-foreground">{host.domain}</span>
-                    </td>
-                    <td className="px-3 py-3">
+                    </TableCell>
+                    <TableCell className="px-3 py-3">
                       <span className="font-mono text-xs text-muted-foreground">{host.ip}</span>
-                    </td>
-                    <td className="px-3 py-3">
+                    </TableCell>
+                    <TableCell className="px-3 py-3">
                       {group ? (
                         <span
                           className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium"
@@ -196,16 +205,16 @@ export function HostsPage() {
                       ) : (
                         <span className="text-xs text-muted-foreground/50">—</span>
                       )}
-                    </td>
-                    <td className="px-3 py-3">
+                    </TableCell>
+                    <TableCell className="px-3 py-3">
                       <Badge className={`text-[10px] border-0 ${sourceColors[host.source]}`}>
                         {host.source}
                       </Badge>
-                    </td>
-                    <td className="px-3 py-3">
+                    </TableCell>
+                    <TableCell className="px-3 py-3">
                       <span className="text-xs text-muted-foreground">{host.description ?? "—"}</span>
-                    </td>
-                    <td className="px-6 py-3">
+                    </TableCell>
+                    <TableCell className="sticky right-0 bg-background group-hover:bg-[color-mix(in_srgb,var(--accent)_30%,var(--background))] transition-colors px-6 py-3 border-l border-border z-10">
                       <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Button
                           variant="ghost"
@@ -224,12 +233,12 @@ export function HostsPage() {
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </div>
 
