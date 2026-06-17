@@ -40,6 +40,8 @@ export interface ProxyRule {
   targetAddress: string;
   customResolver?: string;
   enabled: boolean;
+  stripPrefix?: boolean;
+  isRegex?: boolean;
   createdAt: string;
   updatedAt: string;
 }

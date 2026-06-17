@@ -34,12 +34,14 @@ fn log_proxy_error(error_msg: &str) {
 fn get_proxy_rules_for_domain(app_handle: &tauri::AppHandle, target_domain: &str) -> Result<Vec<ProxyRule>, String> {
     let conn = crate::db::get_connection(app_handle)?;
     let mut stmt = conn.prepare(
-        "SELECT id, domain, path_prefix, target_type, target_address, custom_resolver, enabled, created_at, updated_at \
-         FROM proxy_rules WHERE domain = ?1 AND enabled = 1 ORDER BY length(path_prefix) DESC;"
+        "SELECT id, domain, path_prefix, target_type, target_address, custom_resolver, enabled, strip_prefix, is_regex, created_at, updated_at \
+         FROM proxy_rules WHERE domain = ?1 AND enabled = 1 ORDER BY is_regex ASC, length(path_prefix) DESC;"
     ).map_err(|e| e.to_string())?;
     
     let rules_iter = stmt.query_map([target_domain], |row| {
         let enabled_val: i32 = row.get(6)?;
+        let strip_prefix_val: i32 = row.get(7)?;
+        let is_regex_val: i32 = row.get(8)?;
         Ok(ProxyRule {
             id: row.get(0)?,
             domain: row.get(1)?,
@@ -48,8 +50,10 @@ fn get_proxy_rules_for_domain(app_handle: &tauri::AppHandle, target_domain: &str
             target_address: row.get(4)?,
             custom_resolver: row.get(5)?,
             enabled: enabled_val != 0,
-            created_at: row.get(7)?,
-            updated_at: row.get(8)?,
+            strip_prefix: strip_prefix_val != 0,
+            is_regex: is_regex_val != 0,
+            created_at: row.get(9)?,
+            updated_at: row.get(10)?,
         })
     }).map_err(|e| e.to_string())?;
     
@@ -159,12 +163,38 @@ async fn proxy_handler(
     // 3. Match path
     let path = req.uri().path().to_string();
     let query = req.uri().query().unwrap_or("").to_string();
-    let matched_rule = rules.iter().filter(|r| r.enabled && path.starts_with(&r.path_prefix)).max_by_key(|r| r.path_prefix.len());
+    
+    let matched_rule = rules.iter().filter(|r| r.enabled).find(|r| {
+        if r.is_regex {
+            if let Ok(re) = regex::Regex::new(&r.path_prefix) {
+                re.is_match(&path)
+            } else {
+                false
+            }
+        } else {
+            path.starts_with(&r.path_prefix)
+        }
+    });
 
     let rule = match matched_rule {
         Some(r) => r,
         None => return Response::builder().status(StatusCode::NOT_FOUND).body(Body::from(format!("No proxy rule matches domain: {} and path: {}", host, path))).unwrap(),
     };
+
+    // Determine target rewritten path if strip_prefix is true
+    let mut rewritten_path = path.clone();
+    if rule.strip_prefix {
+        if rule.is_regex {
+            if let Ok(re) = regex::Regex::new(&rule.path_prefix) {
+                rewritten_path = re.replace(&path, "").to_string();
+            }
+        } else {
+            rewritten_path = path.replacen(&rule.path_prefix, "", 1);
+        }
+        if !rewritten_path.starts_with('/') {
+            rewritten_path = format!("/{}", rewritten_path);
+        }
+    }
 
     // 4. Forward request
     let client = reqwest::Client::new();
@@ -172,7 +202,7 @@ async fn proxy_handler(
     let headers = req.headers().clone();
     let body = req.into_body();
 
-    // Determine target URL
+    // Determine target URL using rewritten_path
     let target_url = if rule.target_type == "external" {
         // Resolve domain name with custom resolver to avoid loop
         let resolver_ip = rule.custom_resolver.as_deref().unwrap_or("8.8.8.8");
@@ -190,17 +220,17 @@ async fn proxy_handler(
         let scheme = if is_https { "https" } else { "http" };
         
         if query.is_empty() {
-            format!("{}://{}{}", scheme, resolved_ip, path)
+            format!("{}://{}{}", scheme, resolved_ip, rewritten_path)
         } else {
-            format!("{}://{}{}?{}", scheme, resolved_ip, path, query)
+            format!("{}://{}{}?{}", scheme, resolved_ip, rewritten_path, query)
         }
     } else {
         // Local address
         let base_url = rule.target_address.trim_end_matches('/');
         if query.is_empty() {
-            format!("{}{}", base_url, path)
+            format!("{}{}", base_url, rewritten_path)
         } else {
-            format!("{}{}?{}", base_url, path, query)
+            format!("{}{}?{}", base_url, rewritten_path, query)
         }
     };
 

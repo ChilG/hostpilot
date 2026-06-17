@@ -1761,6 +1761,7 @@ dependencies = [
  "axum",
  "chrono",
  "hickory-resolver",
+ "regex",
  "reqwest 0.12.28",
  "rfd",
  "rusqlite",

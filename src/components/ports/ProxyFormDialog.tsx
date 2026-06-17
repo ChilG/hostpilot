@@ -45,6 +45,8 @@ export function ProxyFormDialog({
   const [targetAddress, setTargetAddress] = useState("");
   const [customResolver, setCustomResolver] = useState("8.8.8.8");
   const [enabled, setEnabled] = useState(true);
+  const [stripPrefix, setStripPrefix] = useState(false);
+  const [isRegex, setIsRegex] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -56,6 +58,8 @@ export function ProxyFormDialog({
         setTargetAddress(rule.targetAddress);
         setCustomResolver(rule.customResolver || "8.8.8.8");
         setEnabled(rule.enabled);
+        setStripPrefix(rule.stripPrefix || false);
+        setIsRegex(rule.isRegex || false);
       } else {
         setDomain("");
         setPathPrefix("/");
@@ -63,6 +67,8 @@ export function ProxyFormDialog({
         setTargetAddress("");
         setCustomResolver("8.8.8.8");
         setEnabled(true);
+        setStripPrefix(false);
+        setIsRegex(false);
       }
       setErrors({});
     }
@@ -77,20 +83,28 @@ export function ProxyFormDialog({
       newErrors.domain = t("validation.invalidDomain");
     }
 
-    if (!pathPrefix.trim() || !pathPrefix.startsWith("/")) {
-      newErrors.pathPrefix = t("locale") === "th" ? "Path ต้องขึ้นต้นด้วย /" : "Path must start with /"; // Keeping custom simple inline for path specific if needed, or add to dictionary
+    if (!pathPrefix.trim()) {
+      newErrors.pathPrefix = t("validation.pathRequired");
+    } else if (!isRegex && !pathPrefix.startsWith("/")) {
+      newErrors.pathPrefix = t("validation.pathMustStartWithSlash");
+    } else if (isRegex) {
+      try {
+        new RegExp(pathPrefix);
+      } catch (e) {
+        newErrors.pathPrefix = t("invalidRegex");
+      }
     }
 
     if (!targetAddress.trim()) {
-      newErrors.targetAddress = t("locale") === "th" ? "กรุณากรอกเป้าหมาย" : "Target address is required";
+      newErrors.targetAddress = t("validation.targetAddressRequired");
     } else if (targetType === "local" && !/^(http|https):\/\//.test(targetAddress)) {
-      newErrors.targetAddress = t("locale") === "th" ? "ต้องระบุ http:// หรือ https://" : "Must start with http:// or https://";
+      newErrors.targetAddress = t("validation.targetAddressScheme");
     }
 
     if (targetType === "external" && customResolver) {
       const ipPattern = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
       if (!ipPattern.test(customResolver)) {
-        newErrors.customResolver = t("locale") === "th" ? "IP DNS ไม่ถูกต้อง" : "Invalid DNS IP address";
+        newErrors.customResolver = t("validation.resolverIpInvalid");
       }
     }
 
@@ -102,7 +116,7 @@ export function ProxyFormDialog({
         r.pathPrefix.toLowerCase() === pathPrefix.toLowerCase()
     );
     if (isDuplicate) {
-      newErrors.pathPrefix = t("locale") === "th" ? "Path นี้ถูกใช้ไปแล้วสำหรับโดเมนนี้" : "Path prefix already exists for this domain";
+      newErrors.pathPrefix = t("validation.pathPrefixDuplicate");
     }
 
     setErrors(newErrors);
@@ -119,6 +133,8 @@ export function ProxyFormDialog({
       targetAddress: targetAddress.trim(),
       customResolver: targetType === "external" ? customResolver.trim() : undefined,
       enabled,
+      stripPrefix,
+      isRegex,
     };
 
     if (mode === "create") {
@@ -186,8 +202,8 @@ export function ProxyFormDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="local">Local Dev Server (เช่น localhost:3000)</SelectItem>
-                <SelectItem value="external">External Production Server (เช่น https://myweb.com)</SelectItem>
+                <SelectItem value="local">{t("localDevServer")}</SelectItem>
+                <SelectItem value="external">{t("externalProdServer")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -219,6 +235,36 @@ export function ProxyFormDialog({
               {errors.customResolver && <p className="text-xs text-red-500">{errors.customResolver}</p>}
             </div>
           )}
+
+          {/* Regex Match Switch */}
+          <div className="flex items-center justify-between border-t border-border/40 pt-3 mt-1">
+            <div className="space-y-0.5">
+              <Label htmlFor="regex-switch">{t("isRegex")}</Label>
+              <p className="text-[11px] text-muted-foreground">
+                {t("isRegexDesc")}
+              </p>
+            </div>
+            <Switch
+              id="regex-switch"
+              checked={isRegex}
+              onCheckedChange={setIsRegex}
+            />
+          </div>
+
+          {/* Strip Prefix Switch */}
+          <div className="flex items-center justify-between pt-2">
+            <div className="space-y-0.5">
+              <Label htmlFor="strip-prefix-switch">{t("stripPrefix")}</Label>
+              <p className="text-[11px] text-muted-foreground">
+                {t("stripPrefixDesc")}
+              </p>
+            </div>
+            <Switch
+              id="strip-prefix-switch"
+              checked={stripPrefix}
+              onCheckedChange={setStripPrefix}
+            />
+          </div>
 
           {/* Enabled Switch */}
           <div className="flex items-center justify-between pt-2">

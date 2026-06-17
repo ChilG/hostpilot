@@ -95,6 +95,10 @@ pub struct ProxyRule {
     pub target_address: String,
     pub custom_resolver: Option<String>,
     pub enabled: bool,
+    #[serde(default)]
+    pub strip_prefix: bool,
+    #[serde(default)]
+    pub is_regex: bool,
     pub created_at: String,
     pub updated_at: String,
 }

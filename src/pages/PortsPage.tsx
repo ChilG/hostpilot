@@ -127,21 +127,19 @@ export function PortsPage() {
   const checkAll = async () => {
     const enabledPorts = ports.filter((p) => p.enabled);
     if (enabledPorts.length === 0) {
-      toast.info(t("locale") === "th" ? "ไม่มีกฎพอร์ตที่เปิดใช้งานอยู่เพื่อตรวจสอบ" : "No active port rules to check");
+      toast.info(t("noActivePortsToCheck"));
       return;
     }
     
     toast.promise(
       Promise.all(enabledPorts.map((p) => checkPortLive(p.id, p.targetHost, p.port))),
       {
-        loading: t("locale") === "th" ? "กำลังแสกนตรวจสอบการเชื่อมต่อพอร์ต..." : "Scanning port services...",
+        loading: t("scanningPorts"),
         success: () => {
           const live = ports.filter((p) => p.status === "running").length;
-          return t("locale") === "th"
-            ? `สแกนเสร็จสิ้น: ตรวจพบ ${live} บริการกำลังทำงาน`
-            : `Scan complete: ${live} services running`;
+          return t("portScanCompletedWithCount", { count: live });
         },
-        error: t("locale") === "th" ? "การแสกนตรวจสอบข้อผิดพลาด" : "Port scan failed",
+        error: t("portScanFailed"),
       }
     );
   };
@@ -199,7 +197,7 @@ export function PortsPage() {
         subtitle={
           activeTab === "ports"
             ? `${runningPorts} ${t("running")} · ${t("portsSubtitle")}`
-            : `${runningProxyRules} ${t("locale") === "th" ? "กฎเปิดใช้งานอยู่" : "rules active"} · ${
+            : `${runningProxyRules} ${t("proxyRulesActive")} · ${
                 proxyRunningPort !== null
                   ? t("proxyRunningDesc", { port: proxyRunningPort })
                   : t("proxyStoppedDesc")
@@ -211,7 +209,7 @@ export function PortsPage() {
               <>
                 <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 cursor-pointer" onClick={checkAll}>
                   <RefreshCw className="w-3.5 h-3.5" />
-                  {t("locale") === "th" ? "ตรวจสอบทั้งหมด" : "Check All"}
+                  {t("checkAll")}
                 </Button>
                 <Button
                   size="sm"
@@ -287,9 +285,9 @@ export function PortsPage() {
                         onCheckedChange={() => {
                           updatePort(port.id, { enabled: !port.enabled });
                           toast.success(
-                            t("locale") === "th"
-                              ? `กฎพอร์ตถูก ${!port.enabled ? "เปิดใช้งาน" : "ปิดใช้งาน"}`
-                              : `Port rule ${!port.enabled ? "enabled" : "disabled"}`
+                            t("portRuleToggleSuccess", {
+                              status: !port.enabled ? t("statusEnabled") : t("statusDisabled"),
+                            })
                           );
                           if (!port.enabled) {
                             checkPortLive(port.id, port.targetHost, port.port);
@@ -442,9 +440,9 @@ export function PortsPage() {
                         onCheckedChange={() => {
                           updateProxyRule(rule.id, { enabled: !rule.enabled });
                           toast.success(
-                            t("locale") === "th"
-                              ? `กฎถูก ${!rule.enabled ? "เปิดใช้งาน" : "ปิดใช้งาน"}`
-                              : `Rule ${!rule.enabled ? "enabled" : "disabled"}`
+                            t("proxyRuleToggleSuccess", {
+                              status: !rule.enabled ? t("statusEnabled") : t("statusDisabled"),
+                            })
                           );
                         }}
                         className="scale-90"
@@ -476,6 +474,16 @@ export function PortsPage() {
                           {rule.targetType === "external" && rule.customResolver && (
                             <Badge className="border-0 bg-slate-500/10 text-slate-400 text-[9px] px-1.5 py-0 font-mono">
                               DNS: {rule.customResolver}
+                            </Badge>
+                          )}
+                          {rule.isRegex && (
+                            <Badge className="border-0 bg-yellow-500/10 text-yellow-400 text-[9px] px-1.5 py-0 font-mono">
+                              Regex
+                            </Badge>
+                          )}
+                          {rule.stripPrefix && (
+                            <Badge className="border-0 bg-emerald-500/10 text-emerald-400 text-[9px] px-1.5 py-0 font-mono">
+                              Strip Prefix
                             </Badge>
                           )}
                         </div>

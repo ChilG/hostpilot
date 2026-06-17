@@ -64,6 +64,7 @@ pub fn init_db(app_handle: &tauri::AppHandle) -> Result<(), String> {
     let migrations = [
         include_str!("../migrations/0001_init.sql"),
         include_str!("../migrations/0002_proxy.sql"),
+        include_str!("../migrations/0003_proxy_advanced.sql"),
     ];
     
     for (i, migration_sql) in migrations.iter().enumerate() {
@@ -225,6 +226,8 @@ pub fn load_config_from_db(app_handle: &tauri::AppHandle) -> Result<AppConfig, S
         .map_err(|e| e.to_string())?;
     let proxy_rules_iter = stmt.query_map([], |row| {
         let enabled_val: i32 = row.get(6)?;
+        let strip_prefix_val: i32 = row.get(7)?;
+        let is_regex_val: i32 = row.get(8)?;
         Ok(ProxyRule {
             id: row.get(0)?,
             domain: row.get(1)?,
@@ -233,8 +236,10 @@ pub fn load_config_from_db(app_handle: &tauri::AppHandle) -> Result<AppConfig, S
             target_address: row.get(4)?,
             custom_resolver: row.get(5)?,
             enabled: enabled_val != 0,
-            created_at: row.get(7)?,
-            updated_at: row.get(8)?,
+            strip_prefix: strip_prefix_val != 0,
+            is_regex: is_regex_val != 0,
+            created_at: row.get(9)?,
+            updated_at: row.get(10)?,
         })
     }).map_err(|e| e.to_string())?;
     let mut proxy_rules = Vec::new();
@@ -355,6 +360,8 @@ pub fn save_config_to_db(app_handle: &tauri::AppHandle, config: &AppConfig) -> R
                 r.target_address,
                 r.custom_resolver,
                 if r.enabled { 1 } else { 0 },
+                if r.strip_prefix { 1 } else { 0 },
+                if r.is_regex { 1 } else { 0 },
                 r.created_at,
                 r.updated_at
             ],
