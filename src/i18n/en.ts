@@ -261,6 +261,18 @@ export const en = {
   exportScopeTitle: "Export Scope",
   allHostsLabel: "All Hosts",
   entriesLabel: "{count} entries",
+  rawImport: "Raw Hosts Import",
+  rawImportDetail: "Paste host entries in /etc/hosts format (IP + domain per line)",
+  rawImportPlaceholder: "Paste your hosts file content here...\n\n# Example:\n127.0.0.1  example.com\n127.0.0.1  api.local",
+  parseAndPreview: "Parse & Preview",
+  rawParseResult: "{total} hosts parsed ({active} active, {disabled} disabled)",
+  rawSkippedLines: "{count} lines skipped (empty or invalid)",
+  assignToGroup: "Assign to Group (optional)",
+  noGroupAssignment: "No group (Ungrouped)",
+  importHosts: "Import {count} Hosts",
+  rawParseError: "No valid host entries found in the pasted text.",
+  rawImportSuccessDetail: "Imported {hosts} hosts from raw text.",
+  rawImportSuccessAlert: "Raw hosts successfully merged into your workspace!",
 
   // Proxy Rules & Reverse Proxy Settings
   reverseProxy: "Reverse Proxy",

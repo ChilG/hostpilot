@@ -261,6 +261,18 @@ export const th = {
   exportScopeTitle: "ขอบเขตการส่งออกข้อมูล",
   allHostsLabel: "รายการโฮสต์ทั้งหมดในระบบ",
   entriesLabel: "{count} รายการ",
+  rawImport: "นำเข้าโฮสต์แบบดิบ (Raw Import)",
+  rawImportDetail: "วางรายการโฮสต์ในรูปแบบ /etc/hosts (IP + โดเมน ต่อบรรทัด)",
+  rawImportPlaceholder: "วางเนื้อหาไฟล์ hosts ของคุณที่นี่...\n\n# ตัวอย่าง:\n127.0.0.1  example.com\n127.0.0.1  api.local",
+  parseAndPreview: "แยกข้อมูลและแสดงตัวอย่าง",
+  rawParseResult: "แยกข้อมูลโฮสต์ได้ทั้งหมด {total} รายการ (เปิดใช้งาน {active}, ปิดใช้งาน {disabled})",
+  rawSkippedLines: "ข้าม {count} บรรทัด (ว่างหรือไม่ถูกต้อง)",
+  assignToGroup: "มอบหมายให้อยู่ในกลุ่ม (ไม่บังคับ)",
+  noGroupAssignment: "ไม่มีกลุ่ม (ไม่จัดกลุ่ม)",
+  importHosts: "นำเข้า {count} โฮสต์",
+  rawParseError: "ไม่พบรายการโฮสต์ที่ถูกต้องในข้อความที่วาง",
+  rawImportSuccessDetail: "นำเข้าโฮสต์ {hosts} รายการจากข้อความดิบสำเร็จ",
+  rawImportSuccessAlert: "ผสานข้อมูลรายการโฮสต์ดิบเข้าสู่พื้นที่ทำงานแล้ว!",
 
   // Proxy Rules & Reverse Proxy Settings
   reverseProxy: "ย้อนกลับพร็อกซี (Reverse Proxy)",
