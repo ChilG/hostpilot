@@ -171,16 +171,23 @@ pub fn backup_hosts_file(app_handle: &tauri::AppHandle, reason: &str) -> Result<
 }
 
 /// Helper function to perform the elevated copy operation
-fn copy_file_elevated(src: &Path, dest: &Path) -> Result<(), String> {
+fn copy_file_elevated(src: &Path, dest: &Path, flush_dns: bool) -> Result<(), String> {
     let src_str = src.to_string_lossy();
     let dest_str = dest.to_string_lossy();
     
     #[cfg(target_os = "macos")]
     {
         // MacOS elevation via osascript using cat instead of cp to keep the inode, attributes and file system watchers intact
-        let cmd = format!(
-            "do shell script \"cat \" & quoted form of POSIX path of \"{}\" & \" > \" & quoted form of POSIX path of \"{}\" & \" && chown root:wheel \" & quoted form of POSIX path of \"{}\" & \" && chmod 644 \" & quoted form of POSIX path of \"{}\" with administrator privileges",
+        let mut shell_cmd = format!(
+            "\"cat \" & quoted form of POSIX path of \"{}\" & \" > \" & quoted form of POSIX path of \"{}\" & \" && chown root:wheel \" & quoted form of POSIX path of \"{}\" & \" && chmod 644 \" & quoted form of POSIX path of \"{}\"",
             src_str, dest_str, dest_str, dest_str
+        );
+        if flush_dns {
+            shell_cmd.push_str(" & \" && dscacheutil -flushcache && killall -HUP mDNSResponder\"");
+        }
+        let cmd = format!(
+            "do shell script {} with administrator privileges",
+            shell_cmd
         );
         let output = Command::new("osascript")
             .arg("-e")
@@ -231,6 +238,7 @@ fn copy_file_elevated(src: &Path, dest: &Path) -> Result<(), String> {
 
 /// Flushes the DNS cache on macOS
 #[cfg(target_os = "macos")]
+#[allow(dead_code)]
 fn flush_dns_cache() -> Result<(), String> {
     let cmd = "do shell script \"dscacheutil -flushcache && killall -HUP mDNSResponder\" with administrator privileges";
     let output = Command::new("osascript")
@@ -269,9 +277,9 @@ pub fn write_hosts_block(
     fs::write(&temp_hosts, &normalized_content)
         .map_err(|e| format!("Failed to write temporary hosts file: {}", e))?;
         
-    // Execute administrative copy/write
+    // Execute administrative copy/write and flush DNS inside the same elevated call on macOS to avoid prompting twice
     let dest_hosts = Path::new(get_hosts_path());
-    let copy_res = copy_file_elevated(&temp_hosts, dest_hosts);
+    let copy_res = copy_file_elevated(&temp_hosts, dest_hosts, true);
     
     if let Err(e) = copy_res {
         let _ = fs::remove_file(&temp_hosts);
@@ -284,15 +292,6 @@ pub fn write_hosts_block(
     if verified_normalized != normalized_content {
         let _ = fs::remove_file(&temp_hosts);
         return Err("Verification failed: system hosts file content does not match the expected updated content.".to_string());
-    }
-    
-    // Flush DNS cache on macOS
-    #[cfg(target_os = "macos")]
-    {
-        if let Err(e) = flush_dns_cache() {
-            let _ = fs::remove_file(&temp_hosts);
-            return Err(e);
-        }
     }
     
     // Clean up temporary file
@@ -323,8 +322,9 @@ pub fn restore_backup(
         .map_err(|e| format!("Failed to read backup file: {}", e))?;
     let normalized_backup = backup_content.replace("\r\n", "\n").replace('\r', "\n");
     
+    // Execute administrative copy/write and flush DNS inside the same elevated call on macOS to avoid prompting twice
     let dest_hosts = Path::new(get_hosts_path());
-    copy_file_elevated(&backup_path, dest_hosts)
+    copy_file_elevated(&backup_path, dest_hosts, true)
         .map_err(|e| format!("Failed to restore hosts backup: {}", e))?;
         
     // Verify
@@ -332,12 +332,6 @@ pub fn restore_backup(
     let verified_normalized = verified_content.replace("\r\n", "\n").replace('\r', "\n");
     if verified_normalized != normalized_backup {
         return Err("Verification failed: system hosts file content does not match the restored backup content.".to_string());
-    }
-    
-    // Flush DNS cache on macOS
-    #[cfg(target_os = "macos")]
-    {
-        flush_dns_cache()?;
     }
     
     Ok(())

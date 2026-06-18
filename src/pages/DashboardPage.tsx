@@ -39,6 +39,10 @@ export function DashboardPage() {
   const [diff, setDiff] = useState<string>("");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
+  const hasPendingChanges = diff
+    .split("\n")
+    .some((line) => line.startsWith("+") || line.startsWith("-"));
+
   const activeProfile = profiles.find((p) => p.active) ||
     profiles[0] || { name: "None", id: "", entryIds: [] };
 
@@ -194,7 +198,11 @@ export function DashboardPage() {
         actions={
           <Button
             size="sm"
-            className="bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5 h-8 text-xs"
+            className={`gap-1.5 h-8 text-xs relative overflow-hidden transition-all duration-300 ${
+              hasPendingChanges
+                ? "bg-gradient-to-r from-indigo-500 via-indigo-600 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white shadow-[0_0_15px_rgba(99,102,241,0.5)] animate-pulse-glow ring-1 ring-indigo-400/50"
+                : "bg-indigo-600 hover:bg-indigo-700 text-white"
+            }`}
             onClick={() => {
               if (settings.previewBeforeApply) {
                 setQuickApplyConfirmOpen(true);
@@ -206,6 +214,12 @@ export function DashboardPage() {
           >
             <Zap className="w-3.5 h-3.5" />
             {t("applyChanges")}
+            {hasPendingChanges && (
+              <span className="absolute top-0.5 right-0.5 flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span>
+              </span>
+            )}
           </Button>
         }
       />
