@@ -82,6 +82,16 @@ export const en = {
   disableAllConfirm: "Disable All Hosts",
   disableAllConfirmText: "Are you sure you want to disable all hosts? This will turn off all hosts mappings.",
   allHostsDisabledToast: "All hosts disabled",
+  enableAll: "Enable All",
+  enableAllConfirm: "Enable All Hosts",
+  enableAllConfirmText: "Are you sure you want to enable all hosts? This will turn on all hosts mappings.",
+  enableGroupConfirm: "Enable Group Hosts",
+  enableGroupConfirmText: 'Are you sure you want to enable all hosts in group "{name}"?',
+  disableGroupConfirm: "Disable Group Hosts",
+  disableGroupConfirmText: 'Are you sure you want to disable all hosts in group "{name}"?',
+  groupHostsEnabledToast: 'All hosts in group "{name}" enabled',
+  groupHostsDisabledToast: 'All hosts in group "{name}" disabled',
+  allHostsEnabledToast: "All hosts enabled",
 
   // Groups Page
   addGroup: "Add Group",
@@ -94,6 +104,8 @@ export const en = {
   groupDeletedToast: 'Group "{name}" deleted{unassignedMsg}',
   unassignedHostsDetail: " — {count} host(s) unassigned",
   hostsCountText: "{count} hosts",
+  deleteAssociatedHostsCheckbox: "Also delete all {count} host(s) assigned to this group",
+  hostsDeletedDetail: " — {count} host(s) deleted",
 
   // Profiles Page
   addProfile: "Create Profile",
@@ -406,6 +418,11 @@ export const en = {
   "notif.hostDeletedDesc": "Domain \"{domain}\" has been removed.",
   "notif.allHostsDisabledTitle": "All Hosts Disabled",
   "notif.allHostsDisabledDesc": "Disabled {count} host mappings.",
+  "notif.allHostsEnabledTitle": "All Hosts Enabled",
+  "notif.allHostsEnabledDesc": "Enabled {count} host mappings.",
+  "notif.groupHostsEnabledTitle": "Group Hosts Enabled",
+  "notif.groupHostsDisabledTitle": "Group Hosts Disabled",
+  "notif.groupHostsStatusDesc": "All {count} hosts in group \"{groupName}\" have been {status}.",
   "notif.profileActivatedTitle": "Profile Activated",
   "notif.profileActivatedDesc": "Profile \"{name}\" is now active.",
   "notif.portDownTitle": "Port Down Alert",

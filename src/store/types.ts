@@ -149,11 +149,13 @@ export type AppStore = {
   updateHost: (id: string, patch: Partial<HostEntry>) => void;
   deleteHost: (id: string) => void;
   disableAllHosts: () => void;
+  enableAllHosts: () => void;
+  toggleGroupHosts: (groupId: string, enabled: boolean) => void;
 
   // Groups CRUD
   addGroup: (g: Omit<HostGroup, "id">) => void;
   updateGroup: (id: string, patch: Partial<HostGroup>) => void;
-  deleteGroup: (id: string) => void;
+  deleteGroup: (id: string, deleteAssociatedHosts?: boolean) => void;
 
   // Profiles CRUD
   addProfile: (p: Omit<HostProfile, "id" | "createdAt" | "updatedAt">) => void;

@@ -14,7 +14,7 @@ interface CommandPaletteProps {
 
 export function CommandPalette({ open, onOpenChange, onNavigate }: CommandPaletteProps) {
   const { t } = useTranslation();
-  const { profiles, hosts, activateProfile, updateHost } = useAppStore();
+  const { profiles, hosts, groups, activateProfile, updateHost } = useAppStore();
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -57,11 +57,14 @@ export function CommandPalette({ open, onOpenChange, onNavigate }: CommandPalett
   const filteredProfiles = profiles
     .filter(p => p.name.toLowerCase().includes(query.toLowerCase()))
     .map(p => ({ ...p, category: "profiles" as const }));
+  const filteredGroups = groups
+    .filter(g => g.name.toLowerCase().includes(query.toLowerCase()) || (g.description ?? "").toLowerCase().includes(query.toLowerCase()))
+    .map(g => ({ ...g, category: "groups" as const }));
   const filteredHosts = hosts
     .filter(h => h.domain.toLowerCase().includes(query.toLowerCase()))
     .map(h => ({ ...h, category: "hosts" as const }));
 
-  const allItems = [...filteredPages, ...filteredProfiles, ...filteredHosts];
+  const allItems = [...filteredPages, ...filteredProfiles, ...filteredGroups, ...filteredHosts];
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") {
@@ -85,6 +88,9 @@ export function CommandPalette({ open, onOpenChange, onNavigate }: CommandPalett
       activateProfile(item.id);
     } else if (item.category === "hosts") {
       updateHost(item.id, { enabled: !item.enabled });
+    } else if (item.category === "groups") {
+      (window as any).__highlightGroupId = item.id;
+      onNavigate("groups");
     }
     onOpenChange(false);
   };
@@ -152,8 +158,11 @@ export function CommandPalette({ open, onOpenChange, onNavigate }: CommandPalett
                       {item.category === "profiles" && (
                         <BookMarked className="w-4 h-4 text-emerald-400 flex-shrink-0" />
                       )}
-                      {item.category === "hosts" && (
+                       {item.category === "hosts" && (
                         <Globe className="w-4 h-4 text-sky-400 flex-shrink-0" />
+                      )}
+                      {item.category === "groups" && (
+                        <Layers className="w-4 h-4 text-indigo-400 flex-shrink-0" />
                       )}
                       <span className="font-medium truncate text-foreground/90">
                         {"domain" in item ? item.domain : item.name}

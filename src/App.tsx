@@ -53,9 +53,16 @@ function AppContent() {
     };
     window.addEventListener("keydown", handleKeyDown);
 
+    const handleNavigate = (e: Event) => {
+      const targetPage = (e as CustomEvent).detail as Page;
+      if (targetPage) setPage(targetPage);
+    };
+    window.addEventListener("navigate-page", handleNavigate);
+
     return () => {
       window.removeEventListener("open-command-palette", handleOpen);
       window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("navigate-page", handleNavigate);
     };
   }, []);
 

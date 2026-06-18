@@ -17,9 +17,10 @@ interface HostTableRowProps {
   group: HostGroup | undefined;
   onEdit: (host: HostEntry) => void;
   onDelete: (host: HostEntry) => void;
+  onGroupClick?: (groupId: string) => void;
 }
 
-export function HostTableRow({ host, group, onEdit, onDelete }: HostTableRowProps) {
+export function HostTableRow({ host, group, onEdit, onDelete, onGroupClick }: HostTableRowProps) {
   const { updateHost } = useAppStore();
   const { t } = useTranslation();
 
@@ -45,12 +46,15 @@ export function HostTableRow({ host, group, onEdit, onDelete }: HostTableRowProp
       </TableCell>
       <TableCell className="px-3 py-3">
         {group ? (
-          <span
-            className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium"
+          <button
+            onClick={() => {
+              onGroupClick?.(group.id);
+            }}
+            className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium cursor-pointer hover:brightness-110 hover:scale-[1.03] active:scale-95 transition-all outline-none border-0"
             style={{ backgroundColor: group.color + "22", color: group.color }}
           >
             {group.name}
-          </span>
+          </button>
         ) : (
           <span className="text-xs text-muted-foreground/50">—</span>
         )}

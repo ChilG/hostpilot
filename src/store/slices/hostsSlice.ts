@@ -16,6 +16,8 @@ export type HostsSlice = {
   updateHost: (id: string, patch: Partial<HostEntry>) => void;
   deleteHost: (id: string) => void;
   disableAllHosts: () => void;
+  enableAllHosts: () => void;
+  toggleGroupHosts: (groupId: string, enabled: boolean) => void;
 };
 
 // ─── Slice Creator ──────────────────────────────────────────────────────────
@@ -82,6 +84,47 @@ export const createHostsSlice: StateCreator<AppStore, [], [], HostsSlice> = (set
     get().addNotification(
       t(get, "notif.allHostsDisabledTitle"),
       t(get, "notif.allHostsDisabledDesc", { count: enabledCount }),
+      "info"
+    );
+  },
+
+  enableAllHosts: () => {
+    const disabledCount = get().hosts.filter((h) => !h.enabled).length;
+    if (disabledCount === 0) return;
+    set((state) => ({
+      hosts: state.hosts.map((h) =>
+        !h.enabled ? { ...h, enabled: true, updatedAt: now() } : h
+      ),
+    }));
+    get().addNotification(
+      t(get, "notif.allHostsEnabledTitle"),
+      t(get, "notif.allHostsEnabledDesc", { count: disabledCount }),
+      "info"
+    );
+  },
+
+  toggleGroupHosts: (groupId, enabled) => {
+    const groupHosts = get().hosts.filter((h) => h.groupId === groupId);
+    const targetCount = groupHosts.filter((h) => h.enabled !== enabled).length;
+    if (targetCount === 0) return;
+
+    set((state) => ({
+      hosts: state.hosts.map((h) =>
+        h.groupId === groupId ? { ...h, enabled, updatedAt: now() } : h
+      ),
+    }));
+
+    // Find group name
+    const group = get().groups.find((g) => g.id === groupId);
+    const groupName = group ? group.name : "Unknown Group";
+
+    get().addNotification(
+      enabled ? t(get, "notif.groupHostsEnabledTitle") : t(get, "notif.groupHostsDisabledTitle"),
+      t(get, "notif.groupHostsStatusDesc", {
+        groupName,
+        count: targetCount,
+        status: enabled ? t(get, "statusEnabled") : t(get, "statusDisabled"),
+      }),
       "info"
     );
   },

@@ -26,10 +26,10 @@ import { useAppStore, type HostEntry } from "@/store/AppStore";
 import { HostFormDialog } from "@/components/hosts/HostFormDialog";
 import { HostTableRow } from "@/components/hosts/HostTableRow";
 import { useTranslation } from "@/i18n/translations";
-import { Plus, Search, Filter, Globe, PowerOff } from "lucide-react";
+import { Plus, Search, Filter, Globe, PowerOff, Check } from "lucide-react";
 
 export function HostsPage() {
-  const { hosts, groups, deleteHost, disableAllHosts } = useAppStore();
+  const { hosts, groups, deleteHost, disableAllHosts, enableAllHosts, toggleGroupHosts } = useAppStore();
   const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [filterGroup, setFilterGroup] = useState<string | null>(null);
@@ -39,7 +39,58 @@ export function HostsPage() {
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
   const [editTarget, setEditTarget] = useState<HostEntry | undefined>();
   const [deleteTarget, setDeleteTarget] = useState<HostEntry | undefined>();
-  const [disableAllConfirmOpen, setDisableAllConfirmOpen] = useState(false);
+  
+  // Dynamic Confirmation Dialog state
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmTitle, setConfirmTitle] = useState("");
+  const [confirmDescription, setConfirmDescription] = useState("");
+  const [confirmAction, setConfirmAction] = useState<() => void>(() => () => {});
+
+  const triggerDisableAll = () => {
+    setConfirmTitle(t("disableAllConfirm"));
+    setConfirmDescription(t("disableAllConfirmText"));
+    setConfirmAction(() => () => {
+      disableAllHosts();
+      toast.success(t("allHostsDisabledToast"));
+      setConfirmOpen(false);
+    });
+    setConfirmOpen(true);
+  };
+
+  const triggerEnableAll = () => {
+    setConfirmTitle(t("enableAllConfirm"));
+    setConfirmDescription(t("enableAllConfirmText"));
+    setConfirmAction(() => () => {
+      enableAllHosts();
+      toast.success(t("allHostsEnabledToast"));
+      setConfirmOpen(false);
+    });
+    setConfirmOpen(true);
+  };
+
+  const triggerDisableGroup = (groupId: string) => {
+    const groupName = groups.find((g) => g.id === groupId)?.name || "";
+    setConfirmTitle(t("disableGroupConfirm", { name: groupName }));
+    setConfirmDescription(t("disableGroupConfirmText", { name: groupName }));
+    setConfirmAction(() => () => {
+      toggleGroupHosts(groupId, false);
+      toast.success(t("groupHostsDisabledToast", { name: groupName }));
+      setConfirmOpen(false);
+    });
+    setConfirmOpen(true);
+  };
+
+  const triggerEnableGroup = (groupId: string) => {
+    const groupName = groups.find((g) => g.id === groupId)?.name || "";
+    setConfirmTitle(t("enableGroupConfirm", { name: groupName }));
+    setConfirmDescription(t("enableGroupConfirmText", { name: groupName }));
+    setConfirmAction(() => () => {
+      toggleGroupHosts(groupId, true);
+      toast.success(t("groupHostsEnabledToast", { name: groupName }));
+      setConfirmOpen(false);
+    });
+    setConfirmOpen(true);
+  };
 
   const filtered = hosts.filter((h) => {
     const matchSearch =
@@ -76,16 +127,53 @@ export function HostsPage() {
         subtitle={`${hosts.filter((h) => h.enabled).length} ${t("active")} / ${hosts.length} ${t("hosts")}`}
         actions={
           <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              className="border-destructive/30 hover:border-destructive hover:bg-destructive/10 text-destructive/90 hover:text-destructive gap-1.5 h-8 text-xs cursor-pointer"
-              onClick={() => setDisableAllConfirmOpen(true)}
-              disabled={!hosts.some((h) => h.enabled)}
-            >
-              <PowerOff className="w-3.5 h-3.5" />
-              {t("disableAll")}
-            </Button>
+            {filterGroup ? (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-emerald-500/30 hover:border-emerald-500 hover:bg-emerald-500/10 text-emerald-500/90 hover:text-emerald-500 gap-1.5 h-8 text-xs cursor-pointer"
+                  onClick={() => triggerEnableGroup(filterGroup)}
+                  disabled={!hosts.some((h) => h.groupId === filterGroup && !h.enabled)}
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  {t("enableAll")}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-destructive/30 hover:border-destructive hover:bg-destructive/10 text-destructive/90 hover:text-destructive gap-1.5 h-8 text-xs cursor-pointer"
+                  onClick={() => triggerDisableGroup(filterGroup)}
+                  disabled={!hosts.some((h) => h.groupId === filterGroup && h.enabled)}
+                >
+                  <PowerOff className="w-3.5 h-3.5" />
+                  {t("disableAll")}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-emerald-500/30 hover:border-emerald-500 hover:bg-emerald-500/10 text-emerald-500/90 hover:text-emerald-500 gap-1.5 h-8 text-xs cursor-pointer"
+                  onClick={triggerEnableAll}
+                  disabled={!hosts.some((h) => !h.enabled)}
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  {t("enableAll")}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-destructive/30 hover:border-destructive hover:bg-destructive/10 text-destructive/90 hover:text-destructive gap-1.5 h-8 text-xs cursor-pointer"
+                  onClick={triggerDisableAll}
+                  disabled={!hosts.some((h) => h.enabled)}
+                >
+                  <PowerOff className="w-3.5 h-3.5" />
+                  {t("disableAll")}
+                </Button>
+              </>
+            )}
             <Button
               size="sm"
               className="bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5 h-8 text-xs cursor-pointer"
@@ -186,6 +274,7 @@ export function HostsPage() {
                     group={group}
                     onEdit={openEdit}
                     onDelete={setDeleteTarget}
+                    onGroupClick={(groupId) => setFilterGroup(filterGroup === groupId ? null : groupId)}
                   />
                 );
               })}
@@ -221,21 +310,17 @@ export function HostsPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={disableAllConfirmOpen} onOpenChange={setDisableAllConfirmOpen}>
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t("disableAllConfirm")}</AlertDialogTitle>
-            <AlertDialogDescription>{t("disableAllConfirmText")}</AlertDialogDescription>
+            <AlertDialogTitle>{confirmTitle}</AlertDialogTitle>
+            <AlertDialogDescription>{confirmDescription}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
-              onClick={() => {
-                disableAllHosts();
-                toast.success(t("allHostsDisabledToast"));
-                setDisableAllConfirmOpen(false);
-              }}
+              onClick={confirmAction}
             >
               {t("confirm")}
             </AlertDialogAction>

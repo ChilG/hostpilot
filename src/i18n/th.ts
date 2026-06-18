@@ -82,6 +82,16 @@ export const th = {
   disableAllConfirm: "ปิดใช้งานโฮสต์ทั้งหมด",
   disableAllConfirmText: "คุณแน่ใจหรือไม่ว่าต้องการปิดใช้งานโฮสต์ทั้งหมด? การดำเนินการนี้จะทำการปิดการเชื่อมต่อหรือการใช้งานโฮสต์ทั้งหมดที่มีอยู่",
   allHostsDisabledToast: "ปิดใช้งานโฮสต์ทั้งหมดเรียบร้อยแล้ว",
+  enableAll: "เปิดใช้งานทั้งหมด",
+  enableAllConfirm: "เปิดใช้งานโฮสต์ทั้งหมด",
+  enableAllConfirmText: "คุณแน่ใจหรือไม่ว่าต้องการเปิดใช้งานโฮสต์ทั้งหมด? การดำเนินการนี้จะทำการเปิดการเชื่อมต่อหรือการใช้งานโฮสต์ทั้งหมดที่มีอยู่",
+  enableGroupConfirm: "เปิดใช้งานโฮสต์ในกลุ่ม",
+  enableGroupConfirmText: 'คุณแน่ใจหรือไม่ว่าต้องการเปิดใช้งานโฮสต์ทั้งหมดในกลุ่ม "{name}"?',
+  disableGroupConfirm: "ปิดใช้งานโฮสต์ในกลุ่ม",
+  disableGroupConfirmText: 'คุณแน่ใจหรือไม่ว่าต้องการปิดใช้งานโฮสต์ทั้งหมดในกลุ่ม "{name}"?',
+  groupHostsEnabledToast: 'เปิดใช้งานโฮสต์ทั้งหมดในกลุ่ม "{name}" แล้ว',
+  groupHostsDisabledToast: 'ปิดใช้งานโฮสต์ทั้งหมดในกลุ่ม "{name}" แล้ว',
+  allHostsEnabledToast: "เปิดใช้งานโฮสต์ทั้งหมดเรียบร้อยแล้ว",
 
   // Groups Page
   addGroup: "สร้างกลุ่มใหม่",
@@ -94,6 +104,8 @@ export const th = {
   groupDeletedToast: 'ลบกลุ่ม "{name}" เรียบร้อยแล้ว{unassignedMsg}',
   unassignedHostsDetail: " — มี {count} โฮสต์ถูกถอดการเชื่อมโยง",
   hostsCountText: "{count} โฮสต์",
+  deleteAssociatedHostsCheckbox: "ลบโฮสต์ทั้งหมดภายใต้กลุ่มนี้ด้วย ({count} รายการ)",
+  hostsDeletedDetail: " — ลบโฮสต์ที่เกี่ยวข้อง {count} รายการ",
 
   // Profiles Page
   addProfile: "สร้างโปรไฟล์ใหม่",
@@ -406,6 +418,11 @@ export const th = {
   "notif.hostDeletedDesc": "ลบโดเมน \"{domain}\" ออกจากระบบเรียบร้อยแล้ว",
   "notif.allHostsDisabledTitle": "ปิดใช้งานโฮสต์ทั้งหมดเรียบร้อยแล้ว",
   "notif.allHostsDisabledDesc": "ทำการปิดการเชื่อมต่อโฮสต์จำนวน {count} รายการ",
+  "notif.allHostsEnabledTitle": "เปิดใช้งานโฮสต์ทั้งหมดเรียบร้อยแล้ว",
+  "notif.allHostsEnabledDesc": "ทำการเปิดใช้งานโฮสต์จำนวน {count} รายการ",
+  "notif.groupHostsEnabledTitle": "เปิดใช้งานโฮสต์กลุ่มสำเร็จ",
+  "notif.groupHostsDisabledTitle": "ปิดใช้งานโฮสต์กลุ่มสำเร็จ",
+  "notif.groupHostsStatusDesc": "โฮสต์ทั้งหมด {count} รายการในกลุ่ม \"{groupName}\" ถูก{status}แล้ว",
   "notif.profileActivatedTitle": "เปิดใช้งานโปรไฟล์สำเร็จ",
   "notif.profileActivatedDesc": "โปรไฟล์ \"{name}\" กำลังทำงานอยู่ในขณะนี้",
   "notif.portDownTitle": "แจ้งเตือนบริการพอร์ตหยุดทำงาน",
