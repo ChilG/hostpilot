@@ -55,7 +55,7 @@ fn build_managed_block(block_name: &str, entries: &[HostEntry]) -> String {
                 block.push_str(&format!("{}   {}\n", entry.ip, entry.domain));
             }
         }
-        block.push_str(&format!("# <<< HostPilot END: {}", block_name));
+        block.push_str(&format!("# <<< HostPilot END: {}\n", block_name));
     }
     block
 }
@@ -76,7 +76,9 @@ pub fn replace_managed_block(original_content: &str, block_name: &str, new_block
         if trimmed == start_marker {
             in_block = true;
             if !new_block.is_empty() {
-                new_lines.push(new_block);
+                for b_line in new_block.lines() {
+                    new_lines.push(b_line);
+                }
             }
             block_replaced = true;
             continue;
@@ -96,12 +98,14 @@ pub fn replace_managed_block(original_content: &str, block_name: &str, new_block
         if !new_lines.is_empty() && !new_lines.last().unwrap().is_empty() {
             new_lines.push("");
         }
-        new_lines.push(new_block);
+        for b_line in new_block.lines() {
+            new_lines.push(b_line);
+        }
     }
     
     let mut result = new_lines.join("\n");
-    // Ensure trailing newline if original content had it
-    if original_content.ends_with('\n') && !result.ends_with('\n') {
+    // Ensure trailing newline if original content had it, OR if the file now ends with our block (since our block must end with a newline)
+    if (original_content.ends_with('\n') || !new_block.is_empty()) && !result.ends_with('\n') {
         result.push('\n');
     }
     result
@@ -173,8 +177,11 @@ fn copy_file_elevated(src: &Path, dest: &Path) -> Result<(), String> {
     
     #[cfg(target_os = "macos")]
     {
-        // MacOS elevation via osascript
-        let cmd = format!("do shell script \"cp '{}' '{}'\" with administrator privileges", src_str, dest_str);
+        // MacOS elevation via osascript using cat instead of cp to keep the inode, attributes and file system watchers intact
+        let cmd = format!(
+            "do shell script \"cat \" & quoted form of POSIX path of \"{}\" & \" > \" & quoted form of POSIX path of \"{}\" & \" && chown root:wheel \" & quoted form of POSIX path of \"{}\" & \" && chmod 644 \" & quoted form of POSIX path of \"{}\" with administrator privileges",
+            src_str, dest_str, dest_str, dest_str
+        );
         let output = Command::new("osascript")
             .arg("-e")
             .arg(&cmd)
@@ -183,7 +190,7 @@ fn copy_file_elevated(src: &Path, dest: &Path) -> Result<(), String> {
             
         if !output.status.success() {
             let err_msg = String::from_utf8_lossy(&output.stderr).to_string();
-            return Err(format!("macOS administrative copy failed: {}", err_msg));
+            return Err(format!("macOS administrative elevated write failed: {}", err_msg));
         }
     }
     
@@ -222,6 +229,23 @@ fn copy_file_elevated(src: &Path, dest: &Path) -> Result<(), String> {
     Ok(())
 }
 
+/// Flushes the DNS cache on macOS
+#[cfg(target_os = "macos")]
+fn flush_dns_cache() -> Result<(), String> {
+    let cmd = "do shell script \"dscacheutil -flushcache && killall -HUP mDNSResponder\" with administrator privileges";
+    let output = Command::new("osascript")
+        .arg("-e")
+        .arg(cmd)
+        .output()
+        .map_err(|e| format!("Failed to execute DNS flush command: {}", e))?;
+        
+    if !output.status.success() {
+        let err_msg = String::from_utf8_lossy(&output.stderr).to_string();
+        return Err(format!("macOS DNS cache flush failed: {}", err_msg));
+    }
+    Ok(())
+}
+
 /// Writes a managed hosts block to the system hosts file using privilege escalation
 pub fn write_hosts_block(
     app_handle: &tauri::AppHandle,
@@ -232,6 +256,9 @@ pub fn write_hosts_block(
     let new_block = build_managed_block(block_name, entries);
     let updated_content = replace_managed_block(&current_content, block_name, &new_block);
     
+    // Normalize line endings: convert \r\n to \n, then remaining \r to \n
+    let normalized_content = updated_content.replace("\r\n", "\n").replace('\r', "\n");
+    
     // Write updated content to a temporary file in the app data directory
     let app_dir = app_handle
         .path()
@@ -239,17 +266,39 @@ pub fn write_hosts_block(
         .map_err(|e| format!("Failed to get app data directory: {}", e))?;
     let temp_hosts = app_dir.join("hosts.temp");
     
-    fs::write(&temp_hosts, &updated_content)
+    fs::write(&temp_hosts, &normalized_content)
         .map_err(|e| format!("Failed to write temporary hosts file: {}", e))?;
         
-    // Execute administrative copy
+    // Execute administrative copy/write
     let dest_hosts = Path::new(get_hosts_path());
     let copy_res = copy_file_elevated(&temp_hosts, dest_hosts);
+    
+    if let Err(e) = copy_res {
+        let _ = fs::remove_file(&temp_hosts);
+        return Err(format!("Failed to apply hosts file changes: {}", e));
+    }
+    
+    // Verify that /etc/hosts content matches the expected updated content
+    let verified_content = read_hosts_file()?;
+    let verified_normalized = verified_content.replace("\r\n", "\n").replace('\r', "\n");
+    if verified_normalized != normalized_content {
+        let _ = fs::remove_file(&temp_hosts);
+        return Err("Verification failed: system hosts file content does not match the expected updated content.".to_string());
+    }
+    
+    // Flush DNS cache on macOS
+    #[cfg(target_os = "macos")]
+    {
+        if let Err(e) = flush_dns_cache() {
+            let _ = fs::remove_file(&temp_hosts);
+            return Err(e);
+        }
+    }
     
     // Clean up temporary file
     let _ = fs::remove_file(&temp_hosts);
     
-    copy_res
+    Ok(())
 }
 
 /// Restores a backup file to `/etc/hosts`
@@ -270,8 +319,28 @@ pub fn restore_backup(
         return Err(format!("Backup file not found: {}", backup_path.to_string_lossy()));
     }
     
+    let backup_content = fs::read_to_string(&backup_path)
+        .map_err(|e| format!("Failed to read backup file: {}", e))?;
+    let normalized_backup = backup_content.replace("\r\n", "\n").replace('\r', "\n");
+    
     let dest_hosts = Path::new(get_hosts_path());
     copy_file_elevated(&backup_path, dest_hosts)
+        .map_err(|e| format!("Failed to restore hosts backup: {}", e))?;
+        
+    // Verify
+    let verified_content = read_hosts_file()?;
+    let verified_normalized = verified_content.replace("\r\n", "\n").replace('\r', "\n");
+    if verified_normalized != normalized_backup {
+        return Err("Verification failed: system hosts file content does not match the restored backup content.".to_string());
+    }
+    
+    // Flush DNS cache on macOS
+    #[cfg(target_os = "macos")]
+    {
+        flush_dns_cache()?;
+    }
+    
+    Ok(())
 }
 
 /// Deletes a backup file physically from the filesystem
@@ -297,10 +366,12 @@ pub mod tests {
     #[test]
     fn test_replace_managed_block() {
         let original = "127.0.0.1 localhost\n# >>> HostPilot START: test\n127.0.0.1 test.local\n# <<< HostPilot END: test\n::1 localhost";
-        let new_block = "# >>> HostPilot START: test\n127.0.0.1 new.local\n# <<< HostPilot END: test";
+        let new_block = "# >>> HostPilot START: test\n127.0.0.1 new.local\n# <<< HostPilot END: test\n";
         let result = super::replace_managed_block(original, "test", new_block);
         assert!(result.contains("new.local"));
         assert!(!result.contains("test.local"));
         assert!(result.contains("127.0.0.1 localhost"));
+        assert!(!result.contains("# <<< HostPilot END: test\n\n::1 localhost"));
+        assert!(result.contains("# <<< HostPilot END: test\n::1 localhost"));
     }
 }

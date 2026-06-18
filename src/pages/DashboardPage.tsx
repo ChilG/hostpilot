@@ -37,6 +37,7 @@ export function DashboardPage() {
   const [quickApplyConfirmOpen, setQuickApplyConfirmOpen] = useState(false);
   const [restoreConfirmOpen, setRestoreConfirmOpen] = useState(false);
   const [diff, setDiff] = useState<string>("");
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const activeProfile = profiles.find((p) => p.active) ||
     profiles[0] || { name: "None", id: "", entryIds: [] };
@@ -80,7 +81,7 @@ export function DashboardPage() {
       }
     }
     loadDiff();
-  }, [hosts, activeProfile]);
+  }, [hosts, activeProfile, refreshTrigger]);
 
   const handleQuickApply = async () => {
     try {
@@ -126,6 +127,8 @@ export function DashboardPage() {
         });
       }
 
+      setRefreshTrigger((prev) => prev + 1);
+
       if (settings.showApplyNotifications) {
         toast.success(t("applySuccess"), {
           description: t("applySuccessDetail", { name: activeProfile.name }),
@@ -148,6 +151,7 @@ export function DashboardPage() {
     if (!lastBackup) return;
     try {
       await restoreBackup(lastBackup.id);
+      setRefreshTrigger((prev) => prev + 1);
       toast.success(t("restoreSuccess"), {
         description: t("restoreSuccessDetail", {
           date: new Date(lastBackup.createdAt).toLocaleString(),
