@@ -3,10 +3,46 @@ import { useTranslation } from "@/i18n/translations";
 
 interface LiveDiffPreviewProps {
   diff: string;
+  noHeader?: boolean;
+  maxHeight?: string;
 }
 
-export function LiveDiffPreview({ diff }: LiveDiffPreviewProps) {
+export function LiveDiffPreview({ diff, noHeader = false, maxHeight = "max-h-[300px]" }: LiveDiffPreviewProps) {
   const { t } = useTranslation();
+
+  const preBlock = diff ? (
+    <pre className={`text-xs font-mono bg-muted/40 rounded-lg p-4 leading-6 ${maxHeight} overflow-y-auto whitespace-pre-wrap`}>
+      {diff.split("\n").map((line, idx) => {
+        let color = "text-muted-foreground/60";
+        let displayLine = line;
+        if (line.startsWith("+")) {
+          color = "text-emerald-400 bg-emerald-500/5";
+          const content = line.slice(1);
+          displayLine = content.trim() === "" ? "+" : `+ ${content}`;
+        } else if (line.startsWith("-")) {
+          color = "text-rose-400 bg-rose-500/5 font-medium";
+          const content = line.slice(1);
+          displayLine = content.trim() === "" ? "-" : `- ${content}`;
+        } else if (line.startsWith(" ")) {
+          const content = line.slice(1);
+          displayLine = content.trim() === "" ? " " : `  ${content}`;
+        }
+        return (
+          <div key={idx} className={`${color} px-2 py-0.5 rounded-sm`}>
+            {displayLine}
+          </div>
+        );
+      })}
+    </pre>
+  ) : (
+    <p className="text-xs text-muted-foreground text-center py-4 bg-muted/20 rounded-lg">
+      {t("noData")}
+    </p>
+  );
+
+  if (noHeader) {
+    return preBlock;
+  }
 
   return (
     <div className="rounded-xl border border-border bg-card">
@@ -17,35 +53,7 @@ export function LiveDiffPreview({ diff }: LiveDiffPreviewProps) {
         </Badge>
       </div>
       <div className="p-5">
-        {diff ? (
-          <pre className="text-xs font-mono bg-muted/40 rounded-lg p-4 leading-6 max-h-[300px] overflow-y-auto whitespace-pre-wrap">
-            {diff.split("\n").map((line, idx) => {
-              let color = "text-muted-foreground/60";
-              let displayLine = line;
-              if (line.startsWith("+")) {
-                color = "text-emerald-400 bg-emerald-500/5";
-                const content = line.slice(1);
-                displayLine = content.trim() === "" ? "+" : `+ ${content}`;
-              } else if (line.startsWith("-")) {
-                color = "text-rose-400 bg-rose-500/5 font-medium";
-                const content = line.slice(1);
-                displayLine = content.trim() === "" ? "-" : `- ${content}`;
-              } else if (line.startsWith(" ")) {
-                const content = line.slice(1);
-                displayLine = content.trim() === "" ? " " : `  ${content}`;
-              }
-              return (
-                <div key={idx} className={`${color} px-2 py-0.5 rounded-sm`}>
-                  {displayLine}
-                </div>
-              );
-            })}
-          </pre>
-        ) : (
-          <p className="text-xs text-muted-foreground text-center py-4 bg-muted/20 rounded-lg">
-            {t("noData")}
-          </p>
-        )}
+        {preBlock}
       </div>
     </div>
   );
