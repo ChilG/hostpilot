@@ -129,6 +129,15 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    -webkit-user-select: none;
+    -webkit-user-drag: none;
+    user-select: none;
+  }
+
+  input, textarea, pre, code, table, td, th, [contenteditable="true"], .select-text {
+    -webkit-user-select: text;
+    -webkit-user-drag: auto;
+    user-select: text;
   }
   html, body, #root {
     height: 100%;
