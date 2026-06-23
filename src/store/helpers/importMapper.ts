@@ -1,12 +1,11 @@
-import { type HostEntry, type HostGroup, type HostProfile, type PortRule, type ProxyRule } from "../types";
-
-export interface ImportedConfig {
-  hosts?: any[];
-  groups?: any[];
-  profiles?: any[];
-  ports?: any[];
-  proxyRules?: any[];
-}
+import {
+  type HostEntry,
+  type HostGroup,
+  type HostProfile,
+  type PortRule,
+  type ProxyRule,
+  type ImportedConfig,
+} from "../types";
 
 export interface CurrentStoreState {
   hosts: HostEntry[];
@@ -29,6 +28,36 @@ export interface MergeResult {
     portsImported: number;
     proxyRulesImported: number;
   };
+}
+
+function resolveGroupId(
+  oldGroupId: string | undefined,
+  groupName: string | undefined,
+  groupOldToNewId: Record<string, string>,
+  nextGroups: HostGroup[]
+): string | undefined {
+  if (oldGroupId) {
+    if (groupOldToNewId[oldGroupId]) {
+      return groupOldToNewId[oldGroupId];
+    }
+    // Direct ID match
+    const directMatch = nextGroups.find((eg) => eg.id === oldGroupId);
+    if (directMatch) {
+      return directMatch.id;
+    }
+  }
+
+  if (groupName) {
+    // Look up by group name
+    const matchedGroup = nextGroups.find(
+      (eg) => eg.name.toLowerCase() === groupName.toLowerCase()
+    );
+    if (matchedGroup) {
+      return matchedGroup.id;
+    }
+  }
+
+  return undefined;
 }
 
 export function mergeImportedConfig(
@@ -91,30 +120,7 @@ export function mergeImportedConfig(
       hostOldToNewId[h.id || h.name] = existing.id;
       importedIds.push(existing.id);
       
-      const oldGroupId = h.groupId || h.group_id;
-      let newGroupId: string | undefined = undefined;
-
-      if (oldGroupId) {
-        if (groupOldToNewId[oldGroupId]) {
-          newGroupId = groupOldToNewId[oldGroupId];
-        } else {
-          // Direct ID match
-          const directMatch = nextGroups.find((eg) => eg.id === oldGroupId);
-          if (directMatch) {
-            newGroupId = directMatch.id;
-          }
-        }
-      }
-
-      if (!newGroupId && h.group) {
-        // Look up by group name
-        const matchedGroup = nextGroups.find(
-          (eg) => eg.name.toLowerCase() === h.group.toLowerCase()
-        );
-        if (matchedGroup) {
-          newGroupId = matchedGroup.id;
-        }
-      }
+      const newGroupId = resolveGroupId(h.groupId || h.group_id, h.group, groupOldToNewId, nextGroups);
 
       nextHosts = nextHosts.map((eh) => {
         if (eh.id === existing.id) {
@@ -133,30 +139,7 @@ export function mergeImportedConfig(
       hostsImported++;
     } else {
       const newId = uid();
-      const oldGroupId = h.groupId || h.group_id;
-      let newGroupId: string | undefined = undefined;
-
-      if (oldGroupId) {
-        if (groupOldToNewId[oldGroupId]) {
-          newGroupId = groupOldToNewId[oldGroupId];
-        } else {
-          // Direct ID match
-          const directMatch = nextGroups.find((eg) => eg.id === oldGroupId);
-          if (directMatch) {
-            newGroupId = directMatch.id;
-          }
-        }
-      }
-
-      if (!newGroupId && h.group) {
-        // Look up by group name
-        const matchedGroup = nextGroups.find(
-          (eg) => eg.name.toLowerCase() === h.group.toLowerCase()
-        );
-        if (matchedGroup) {
-          newGroupId = matchedGroup.id;
-        }
-      }
+      const newGroupId = resolveGroupId(h.groupId || h.group_id, h.group, groupOldToNewId, nextGroups);
 
       nextHosts.push({
         id: newId,

@@ -49,7 +49,7 @@ export function HostTableRow({ host, group, onEdit, onDelete, onGroupClick, onSy
                 className="text-[9px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/25 rounded px-1 flex items-center gap-1 py-0.2 select-none"
               >
                 <RefreshCw className="w-2 h-2" style={{ animation: "spin 4s linear infinite" }} />
-                <span>Rotated</span>
+                <span>{t("statusRotated")}</span>
               </span>
             )}
           </div>

@@ -91,12 +91,12 @@ export function HostFormDialog({ open, onOpenChange, mode, host, onSave }: Props
     if (form.isDynamic) {
       const dynamicVal = form.dynamicValue.trim();
       if (!dynamicVal) {
-        fieldErrors.dynamicValue = "Value is required for dynamic host";
+        fieldErrors.dynamicValue = t("dynamicValueRequired");
       } else if (form.dynamicType === "url") {
         try {
           new URL(dynamicVal);
         } catch (_) {
-          fieldErrors.dynamicValue = "Must be a valid URL";
+          fieldErrors.dynamicValue = t("invalidUrlError");
         }
       }
     }
@@ -199,7 +199,7 @@ export function HostFormDialog({ open, onOpenChange, mode, host, onSave }: Props
           <div className="flex items-center justify-between border border-border rounded-lg p-3 bg-muted/20 my-2">
             <div className="space-y-0.5">
               <Label htmlFor="host-dynamic" className="text-sm font-medium cursor-pointer">{t("isDynamic")}</Label>
-              <p className="text-[10px] text-muted-foreground font-light">Resolve domain dynamically via URL or Script</p>
+              <p className="text-[10px] text-muted-foreground font-light">{t("resolveDomainDynamically")}</p>
             </div>
             <Switch
               id="host-dynamic"
@@ -239,8 +239,8 @@ export function HostFormDialog({ open, onOpenChange, mode, host, onSave }: Props
                 {errors.dynamicValue && <p className="text-xs text-red-400">{errors.dynamicValue}</p>}
                 <p className="text-[10px] text-muted-foreground">
                   {form.dynamicType === "url"
-                    ? "HTTP GET URL that redirects to the rotating domain or returns the domain string."
-                    : "Command string to run locally. Must print the domain to stdout."}
+                    ? t("dynamicHelpTextUrl")
+                    : t("dynamicHelpTextScript")}
                 </p>
               </div>
 

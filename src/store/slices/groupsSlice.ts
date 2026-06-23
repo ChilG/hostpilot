@@ -11,6 +11,8 @@ const now = () => new Date().toISOString();
 
 export type GroupsSlice = {
   groups: HostGroup[];
+  highlightedGroupId: string | null;
+  setHighlightedGroupId: (id: string | null) => void;
   addGroup: (g: Omit<HostGroup, "id">) => void;
   updateGroup: (id: string, patch: Partial<HostGroup>) => void;
   deleteGroup: (id: string, deleteAssociatedHosts?: boolean) => void;
@@ -20,6 +22,11 @@ export type GroupsSlice = {
 
 export const createGroupsSlice: StateCreator<AppStore, [], [], GroupsSlice> = (set) => ({
   groups: [],
+  highlightedGroupId: null,
+
+  setHighlightedGroupId: (id) => {
+    set({ highlightedGroupId: id });
+  },
 
   addGroup: (g) => {
     set((state) => ({

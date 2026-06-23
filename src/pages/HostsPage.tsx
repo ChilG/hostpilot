@@ -1,6 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
+import { useApplyChanges } from "@/hooks/useApplyChanges";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
+import { applyActiveProfile } from "@/store/helpers/hostWriterHelper";
 import { Topbar } from "@/components/layout/Topbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,23 +45,38 @@ export function HostsPage() {
     toggleGroupHosts,
     profiles,
     settings,
-    addBackup,
   } = useAppStore();
   const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [filterGroup, setFilterGroup] = useState<string | null>(null);
 
-  // Apply changes state
-  const [quickApplyConfirmOpen, setQuickApplyConfirmOpen] = useState(false);
+  const {
+    quickApplyConfirmOpen,
+    setQuickApplyConfirmOpen,
+    refreshTrigger,
+    setRefreshTrigger,
+    handleQuickApply,
+  } = useApplyChanges();
+
+  const {
+    isOpen: confirmOpen,
+    setIsOpen: setConfirmOpen,
+    title: confirmTitle,
+    description: confirmDescription,
+    onConfirm: confirmAction,
+    confirm,
+  } = useConfirmDialog();
+
   const [diff, setDiff] = useState<string>("");
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  const activeProfile = profiles.find((p) => p.active) ||
-    profiles[0] || { name: "None", id: "", entryIds: [] };
+  const activeProfile = useMemo(() => {
+    return profiles.find((p) => p.active) ||
+      profiles[0] || { name: "None", id: "", entryIds: [] };
+  }, [profiles]);
 
-  const hasPendingChanges = diff
-    .split("\n")
-    .some((line) => line.startsWith("+") || line.startsWith("-"));
+  const hasPendingChanges = useMemo(() => {
+    return diff.split("\n").some((line) => line.startsWith("+") || line.startsWith("-"));
+  }, [diff]);
 
   // Listen for background hosts file updates to refresh diff preview
   useEffect(() => {
@@ -112,68 +130,7 @@ export function HostsPage() {
     loadDiff();
   }, [hosts, activeProfile, refreshTrigger]);
 
-  const handleQuickApply = async () => {
-    try {
-      // Filter entries associated with the active profile
-      const profileEntries = hosts.filter((h) =>
-        activeProfile.entryIds?.includes(h.id)
-      );
 
-      // Validate before write if enabled
-      if (settings.validateBeforeWrite) {
-        const ipRegex = /^[0-9a-fA-F.:%]+$/;
-        const domainRegex = /^[a-zA-Z0-9][-a-zA-Z0-9.]*$/;
-        for (const entry of profileEntries) {
-          if (entry.enabled) {
-            const ip = entry.ip.trim();
-            const domain = entry.domain.trim();
-            if (!ip) {
-              throw new Error(t("ipCannotBeEmpty", { domain }));
-            }
-            if (!domain) {
-              throw new Error(t("domainCannotBeEmpty"));
-            }
-            if (!ipRegex.test(ip)) {
-              throw new Error(t("invalidIpFormat", { ip }));
-            }
-            if (!domainRegex.test(domain)) {
-              throw new Error(t("invalidDomainFormat", { domain }));
-            }
-          }
-        }
-      }
-
-      // Create backup first if enabled
-      if (settings.backupBeforeWrite) {
-        await addBackup(t("autoBackupBeforeApply", { name: activeProfile.name }));
-      }
-
-      // Write hosts block via Tauri command
-      if (isTauri) {
-        await invoke("write_hosts_block", {
-          blockName: activeProfile.name,
-          entries: profileEntries,
-        });
-      }
-
-      setRefreshTrigger((prev) => prev + 1);
-
-      if (settings.showApplyNotifications) {
-        toast.success(t("applySuccess"), {
-          description: t("applySuccessDetail", { name: activeProfile.name }),
-        });
-      }
-    } catch (e) {
-      console.error("Failed to apply configuration:", e);
-      if (settings.showErrorAlerts) {
-        toast.error(t("applyFailed"), {
-          description: String(e),
-        });
-      }
-    } finally {
-      setQuickApplyConfirmOpen(false);
-    }
-  };
 
   const handleSync = async (host: HostEntry) => {
     const toastId = toast.loading(t("loading"));
@@ -191,21 +148,11 @@ export function HostsPage() {
 
         // Auto-apply if it is in the active profile
         if (activeProfile && activeProfile.id && activeProfile.entryIds?.includes(host.id)) {
-          const updatedHosts = useAppStore.getState().hosts;
-          const profileEntries = updatedHosts.filter((h) =>
-            activeProfile.entryIds?.includes(h.id)
-          );
-
-          if (isTauri) {
-            await invoke("write_hosts_block", {
-              blockName: activeProfile.name,
-              entries: profileEntries,
-            });
-          }
+          await applyActiveProfile();
+        } else {
+          // Dispatch event to reload diff preview in UI and trigger local reload
+          window.dispatchEvent(new CustomEvent("hosts-file-updated"));
         }
-
-        // Dispatch event to reload diff preview in UI and trigger local reload
-        window.dispatchEvent(new CustomEvent("hosts-file-updated"));
         setRefreshTrigger((prev) => prev + 1);
 
         toast.success(t("syncSuccess", { domain: resolvedDomain }), { id: toastId });
@@ -224,66 +171,62 @@ export function HostsPage() {
   const [editTarget, setEditTarget] = useState<HostEntry | undefined>();
   const [deleteTarget, setDeleteTarget] = useState<HostEntry | undefined>();
   
-  // Dynamic Confirmation Dialog state
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [confirmTitle, setConfirmTitle] = useState("");
-  const [confirmDescription, setConfirmDescription] = useState("");
-  const [confirmAction, setConfirmAction] = useState<() => void>(() => () => {});
-
   const triggerDisableAll = () => {
-    setConfirmTitle(t("disableAllConfirm"));
-    setConfirmDescription(t("disableAllConfirmText"));
-    setConfirmAction(() => () => {
-      disableAllHosts();
-      toast.success(t("allHostsDisabledToast"));
-      setConfirmOpen(false);
+    confirm({
+      title: t("disableAllConfirm"),
+      description: t("disableAllConfirmText"),
+      action: () => {
+        disableAllHosts();
+        toast.success(t("allHostsDisabledToast"));
+      },
     });
-    setConfirmOpen(true);
   };
 
   const triggerEnableAll = () => {
-    setConfirmTitle(t("enableAllConfirm"));
-    setConfirmDescription(t("enableAllConfirmText"));
-    setConfirmAction(() => () => {
-      enableAllHosts();
-      toast.success(t("allHostsEnabledToast"));
-      setConfirmOpen(false);
+    confirm({
+      title: t("enableAllConfirm"),
+      description: t("enableAllConfirmText"),
+      action: () => {
+        enableAllHosts();
+        toast.success(t("allHostsEnabledToast"));
+      },
     });
-    setConfirmOpen(true);
   };
 
   const triggerDisableGroup = (groupId: string) => {
     const groupName = groups.find((g) => g.id === groupId)?.name || "";
-    setConfirmTitle(t("disableGroupConfirm", { name: groupName }));
-    setConfirmDescription(t("disableGroupConfirmText", { name: groupName }));
-    setConfirmAction(() => () => {
-      toggleGroupHosts(groupId, false);
-      toast.success(t("groupHostsDisabledToast", { name: groupName }));
-      setConfirmOpen(false);
+    confirm({
+      title: t("disableGroupConfirm", { name: groupName }),
+      description: t("disableGroupConfirmText", { name: groupName }),
+      action: () => {
+        toggleGroupHosts(groupId, false);
+        toast.success(t("groupHostsDisabledToast", { name: groupName }));
+      },
     });
-    setConfirmOpen(true);
   };
 
   const triggerEnableGroup = (groupId: string) => {
     const groupName = groups.find((g) => g.id === groupId)?.name || "";
-    setConfirmTitle(t("enableGroupConfirm", { name: groupName }));
-    setConfirmDescription(t("enableGroupConfirmText", { name: groupName }));
-    setConfirmAction(() => () => {
-      toggleGroupHosts(groupId, true);
-      toast.success(t("groupHostsEnabledToast", { name: groupName }));
-      setConfirmOpen(false);
+    confirm({
+      title: t("enableGroupConfirm", { name: groupName }),
+      description: t("enableGroupConfirmText", { name: groupName }),
+      action: () => {
+        toggleGroupHosts(groupId, true);
+        toast.success(t("groupHostsEnabledToast", { name: groupName }));
+      },
     });
-    setConfirmOpen(true);
   };
 
-  const filtered = hosts.filter((h) => {
-    const matchSearch =
-      h.domain.toLowerCase().includes(search.toLowerCase()) ||
-      h.ip.includes(search) ||
-      (h.description ?? "").toLowerCase().includes(search.toLowerCase());
-    const matchGroup = filterGroup ? h.groupId === filterGroup : true;
-    return matchSearch && matchGroup;
-  });
+  const filtered = useMemo(() => {
+    return hosts.filter((h) => {
+      const matchSearch =
+        h.domain.toLowerCase().includes(search.toLowerCase()) ||
+        h.ip.includes(search) ||
+        (h.description ?? "").toLowerCase().includes(search.toLowerCase());
+      const matchGroup = filterGroup ? h.groupId === filterGroup : true;
+      return matchSearch && matchGroup;
+    });
+  }, [hosts, search, filterGroup]);
 
   const openCreate = () => {
     setFormMode("create");

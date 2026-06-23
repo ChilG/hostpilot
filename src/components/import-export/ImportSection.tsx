@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/store/AppStore";
@@ -30,6 +30,14 @@ export function ImportSection() {
   const [selectedGroupId, setSelectedGroupId] = useState("none");
   const [duplicateStrategy, setDuplicateStrategy] = useState<"skip" | "overwrite" | "duplicate">("skip");
   const [addToActiveProfile, setAddToActiveProfile] = useState(true);
+
+  const activeProfile = useMemo(() => {
+    return profiles.find((p) => p.active) || profiles[0];
+  }, [profiles]);
+
+  const selectedGroup = useMemo(() => {
+    return groups.find((g) => g.id === selectedGroupId);
+  }, [groups, selectedGroupId]);
 
   // JSON Import Handlers
   const processJsonText = (text: string) => {
@@ -279,7 +287,7 @@ export function ImportSection() {
               </label>
               <Select
                 value={duplicateStrategy}
-                onValueChange={(v: any) => setDuplicateStrategy(v)}
+                onValueChange={(v) => setDuplicateStrategy(v as "skip" | "overwrite" | "duplicate")}
               >
                 <SelectTrigger className="w-full bg-muted/10 text-xs h-9 cursor-pointer">
                   <SelectValue placeholder={t("duplicateHandling")} />
@@ -298,28 +306,25 @@ export function ImportSection() {
               </Select>
             </div>
 
-            {(() => {
-              const activeProfile = profiles.find((p) => p.active) || profiles[0];
-              return activeProfile ? (
-                <div 
-                  className="flex items-center space-x-2.5 p-3 rounded-lg bg-muted/10 border border-border/50 select-none cursor-pointer hover:bg-muted/20 transition-colors"
-                  onClick={() => setAddToActiveProfile(!addToActiveProfile)}
-                >
-                  <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
-                    addToActiveProfile ? "bg-violet-600 border-violet-600 text-white" : "border-muted-foreground/45 bg-transparent"
-                  }`}>
-                    {addToActiveProfile && (
-                      <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                    )}
-                  </div>
-                  <span className="text-[11px] font-medium text-foreground">
-                    {t("addToActiveProfileText", { name: activeProfile.name })}
-                  </span>
+            {activeProfile ? (
+              <div 
+                className="flex items-center space-x-2.5 p-3 rounded-lg bg-muted/10 border border-border/50 select-none cursor-pointer hover:bg-muted/20 transition-colors"
+                onClick={() => setAddToActiveProfile(!addToActiveProfile)}
+              >
+                <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
+                  addToActiveProfile ? "bg-violet-600 border-violet-600 text-white" : "border-muted-foreground/45 bg-transparent"
+                }`}>
+                  {addToActiveProfile && (
+                    <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
                 </div>
-              ) : null;
-            })()}
+                <span className="text-[11px] font-medium text-foreground">
+                  {t("addToActiveProfileText", { name: activeProfile.name })}
+                </span>
+              </div>
+            ) : null}
 
             <Button
               size="sm"
@@ -351,15 +356,12 @@ export function ImportSection() {
                 {selectedGroupId !== "none" && (
                   <div className="text-[11px] text-violet-400 flex items-center gap-1.5 mt-1 font-medium">
                     <span>➔ {t("group")}:</span>
-                    {(() => {
-                      const grp = groups.find((g) => g.id === selectedGroupId);
-                      return grp ? (
-                        <span className="flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: grp.color }} />
-                          {grp.name}
-                        </span>
-                      ) : null;
-                    })()}
+                    {selectedGroup ? (
+                      <span className="flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: selectedGroup.color }} />
+                        {selectedGroup.name}
+                      </span>
+                    ) : null}
                   </div>
                 )}
                 <div className="text-[11px] text-violet-400/80 flex items-center gap-1.5 mt-1 font-medium">
@@ -375,10 +377,7 @@ export function ImportSection() {
                 {addToActiveProfile && (
                   <div className="text-[11px] text-violet-400/80 flex items-center gap-1.5 mt-1 font-medium">
                     <span>➔ {t("activeProfile")}:</span>
-                    <span>{(() => {
-                      const activeProfile = profiles.find((p) => p.active) || profiles[0];
-                      return activeProfile ? activeProfile.name : "None";
-                    })()}</span>
+                    <span>{activeProfile ? activeProfile.name : "None"}</span>
                   </div>
                 )}
               </div>

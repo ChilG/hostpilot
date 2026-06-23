@@ -10,13 +10,13 @@ import { ImportExportPage } from "@/pages/ImportExportPage";
 import { BackupsPage } from "@/pages/BackupsPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { AppStoreProvider, useAppStore } from "@/store/AppStore";
-import { Toaster, toast } from "sonner";
+import { Toaster } from "sonner";
 import { invoke } from "@tauri-apps/api/core";
 import { OnboardingModal } from "@/components/layout/OnboardingModal";
 import { CommandPalette } from "@/components/layout/CommandPalette";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { apiAdapter } from "@/store/apiAdapter";
 import { isTauri } from "@/store/types";
+import { useDynamicHostScheduler } from "@/hooks/useDynamicHostScheduler";
 
 const pageMap: Record<Page, React.ComponentType> = {
   dashboard: DashboardPage,
@@ -69,76 +69,7 @@ function AppContent() {
   }, []);
 
   // Background dynamic host domain resolution scheduler
-  useEffect(() => {
-    if (loading) return;
-
-    const intervalId = setInterval(async () => {
-      const { hosts, profiles, updateHost, addNotification } = useAppStore.getState();
-      const dynamicHosts = hosts.filter((h) => h.isDynamic && h.enabled);
-      if (dynamicHosts.length === 0) return;
-
-      const activeProfile = profiles.find((p) => p.active);
-      const now = Date.now();
-
-      for (const host of dynamicHosts) {
-        const lastSyncedTime = host.lastSynced ? new Date(host.lastSynced).getTime() : 0;
-        const intervalMs = (host.syncInterval || 300) * 1000;
-
-        if (now - lastSyncedTime >= intervalMs) {
-          try {
-            const resolvedDomain = await apiAdapter.resolveDynamicHost(
-              host.dynamicType || "url",
-              host.dynamicValue || ""
-            );
-
-            if (resolvedDomain && resolvedDomain !== host.domain) {
-              // Update host domain in store
-              updateHost(host.id, {
-                domain: resolvedDomain,
-                lastSynced: new Date().toISOString(),
-              });
-
-              // If this host is in the active profile, automatically re-apply to system hosts file
-              if (activeProfile && activeProfile.entryIds?.includes(host.id)) {
-                // Fetch the updated hosts state since we just mutated it
-                const updatedHosts = useAppStore.getState().hosts;
-                const profileEntries = updatedHosts.filter((h) =>
-                  activeProfile.entryIds?.includes(h.id)
-                );
-
-                if (isTauri) {
-                  await invoke("write_hosts_block", {
-                    blockName: activeProfile.name,
-                    entries: profileEntries,
-                  });
-                }
-
-                // Dispatch event to reload diff preview in UI
-                window.dispatchEvent(new CustomEvent("hosts-file-updated"));
-
-                toast.success(`Domain rotated: ${resolvedDomain}`);
-
-                addNotification(
-                  "Domain Rotated",
-                  `Domain for ${host.description || host.domain} rotated to ${resolvedDomain}`,
-                  "success"
-                );
-              }
-            } else {
-              // Touch lastSynced time even if domain is unchanged
-              updateHost(host.id, {
-                lastSynced: new Date().toISOString(),
-              });
-            }
-          } catch (e) {
-            console.error(`Background dynamic resolver error for ${host.domain || host.id}:`, e);
-          }
-        }
-      }
-    }, 10000); // Check every 10 seconds
-
-    return () => clearInterval(intervalId);
-  }, [loading]);
+  useDynamicHostScheduler(loading);
 
   const PageComponent = pageMap[page];
 

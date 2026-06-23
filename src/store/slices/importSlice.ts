@@ -1,5 +1,5 @@
 import type { StateCreator } from "zustand";
-import type { AppStore } from "../types";
+import type { AppStore, ImportedConfig } from "../types";
 import { mergeImportedConfig } from "../helpers/importMapper";
 import { t } from "../i18nHelper";
 
@@ -13,13 +13,7 @@ const now = () => new Date().toISOString();
 
 export type ImportSlice = {
   importConfig: (
-    config: {
-      hosts?: any[];
-      groups?: any[];
-      profiles?: any[];
-      ports?: any[];
-      proxyRules?: any[];
-    },
+    config: ImportedConfig,
     duplicateStrategy?: "skip" | "overwrite" | "duplicate",
     addToActiveProfile?: boolean
   ) => {
@@ -62,19 +56,25 @@ export const createImportSlice: StateCreator<AppStore, [], [], ImportSlice> = (s
 
     // Apply updates if any changes occurred
     const patch: Partial<AppStore> = {};
-    if (stats.groupsImported > 0) (patch as any).groups = nextGroups;
-    if (stats.hostsImported > 0) (patch as any).hosts = nextHosts;
-    if (stats.profilesImported > 0) (patch as any).profiles = nextProfiles;
-    if (stats.portsImported > 0) (patch as any).ports = nextPorts;
-    if (stats.proxyRulesImported > 0) (patch as any).proxyRules = nextProxyRules;
+    if (stats.groupsImported > 0) patch.groups = nextGroups;
+    if (stats.hostsImported > 0) patch.hosts = nextHosts;
+    if (stats.profilesImported > 0) patch.profiles = nextProfiles;
+    if (stats.portsImported > 0) patch.ports = nextPorts;
+    if (stats.proxyRulesImported > 0) patch.proxyRules = nextProxyRules;
 
     if (Object.keys(patch).length > 0) {
-      set(patch as any);
+      set(patch);
     }
 
     get().addNotification(
-      "Configuration Mapped & Imported",
-      `Mapped and merged config: ${stats.hostsImported} hosts, ${stats.groupsImported} groups, ${stats.profilesImported} profiles, ${stats.portsImported} port rules, ${stats.proxyRulesImported} proxy rules.`,
+      t(get, "notif.configImportedTitle"),
+      t(get, "notif.configImportedDesc", {
+        hosts: String(stats.hostsImported),
+        groups: String(stats.groupsImported),
+        profiles: String(stats.profilesImported),
+        ports: String(stats.portsImported),
+        proxyRules: String(stats.proxyRulesImported),
+      }),
       "success"
     );
 

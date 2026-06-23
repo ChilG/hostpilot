@@ -512,6 +512,7 @@ fn extract_host_from_text(text: &str) -> Option<String> {
 }
 
 
+#[cfg(test)]
 pub mod tests {
     #[test]
     fn test_replace_managed_block() {

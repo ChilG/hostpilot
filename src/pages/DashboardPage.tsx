@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import { invoke } from "@tauri-apps/api/core";
+import { useApplyChanges } from "@/hooks/useApplyChanges";
 import { Topbar } from "@/components/layout/Topbar";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,23 +29,30 @@ export function DashboardPage() {
     profiles,
     backups,
     activateProfile,
-    addBackup,
     restoreBackup,
     settings,
   } = useAppStore();
   const { t } = useTranslation();
 
-  const [quickApplyConfirmOpen, setQuickApplyConfirmOpen] = useState(false);
+  const {
+    quickApplyConfirmOpen,
+    setQuickApplyConfirmOpen,
+    refreshTrigger,
+    setRefreshTrigger,
+    handleQuickApply,
+  } = useApplyChanges();
+
   const [restoreConfirmOpen, setRestoreConfirmOpen] = useState(false);
   const [diff, setDiff] = useState<string>("");
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  const hasPendingChanges = diff
-    .split("\n")
-    .some((line) => line.startsWith("+") || line.startsWith("-"));
+  const hasPendingChanges = useMemo(() => {
+    return diff.split("\n").some((line) => line.startsWith("+") || line.startsWith("-"));
+  }, [diff]);
 
-  const activeProfile = profiles.find((p) => p.active) ||
-    profiles[0] || { name: "None", id: "", entryIds: [] };
+  const activeProfile = useMemo(() => {
+    return profiles.find((p) => p.active) ||
+      profiles[0] || { name: "None", id: "", entryIds: [] };
+  }, [profiles]);
 
   // Listen for background hosts file updates to refresh diff preview
   useEffect(() => {
@@ -98,68 +106,6 @@ export function DashboardPage() {
     loadDiff();
   }, [hosts, activeProfile, refreshTrigger]);
 
-  const handleQuickApply = async () => {
-    try {
-      // Filter entries associated with the active profile
-      const profileEntries = hosts.filter((h) =>
-        activeProfile.entryIds?.includes(h.id)
-      );
-
-      // Validate before write if enabled
-      if (settings.validateBeforeWrite) {
-        const ipRegex = /^[0-9a-fA-F.:%]+$/;
-        const domainRegex = /^[a-zA-Z0-9][-a-zA-Z0-9.]*$/;
-        for (const entry of profileEntries) {
-          if (entry.enabled) {
-            const ip = entry.ip.trim();
-            const domain = entry.domain.trim();
-            if (!ip) {
-              throw new Error(t("ipCannotBeEmpty", { domain }));
-            }
-            if (!domain) {
-              throw new Error(t("domainCannotBeEmpty"));
-            }
-            if (!ipRegex.test(ip)) {
-              throw new Error(t("invalidIpFormat", { ip }));
-            }
-            if (!domainRegex.test(domain)) {
-              throw new Error(t("invalidDomainFormat", { domain }));
-            }
-          }
-        }
-      }
-
-      // Create backup first if enabled
-      if (settings.backupBeforeWrite) {
-        await addBackup(t("autoBackupBeforeApply", { name: activeProfile.name }));
-      }
-
-      // Write hosts block via Tauri command
-      if (isTauri) {
-        await invoke("write_hosts_block", {
-          blockName: activeProfile.name,
-          entries: profileEntries,
-        });
-      }
-
-      setRefreshTrigger((prev) => prev + 1);
-
-      if (settings.showApplyNotifications) {
-        toast.success(t("applySuccess"), {
-          description: t("applySuccessDetail", { name: activeProfile.name }),
-        });
-      }
-    } catch (e) {
-      console.error("Failed to apply configuration:", e);
-      if (settings.showErrorAlerts) {
-        toast.error(t("applyFailed"), {
-          description: String(e),
-        });
-      }
-    } finally {
-      setQuickApplyConfirmOpen(false);
-    }
-  };
 
   const handleRestore = async () => {
     const lastBackup = backups[0];

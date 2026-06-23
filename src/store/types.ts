@@ -158,6 +158,8 @@ export type AppStore = {
   toggleGroupHosts: (groupId: string, enabled: boolean) => void;
 
   // Groups CRUD
+  highlightedGroupId: string | null;
+  setHighlightedGroupId: (id: string | null) => void;
   addGroup: (g: Omit<HostGroup, "id">) => void;
   updateGroup: (id: string, patch: Partial<HostGroup>) => void;
   deleteGroup: (id: string, deleteAssociatedHosts?: boolean) => void;
@@ -201,13 +203,7 @@ export type AppStore = {
 
   // Import / Export
   importConfig: (
-    config: {
-      hosts?: any[];
-      groups?: any[];
-      profiles?: any[];
-      ports?: any[];
-      proxyRules?: any[];
-    },
+    config: ImportedConfig,
     duplicateStrategy?: "skip" | "overwrite" | "duplicate",
     addToActiveProfile?: boolean
   ) => {
@@ -218,3 +214,11 @@ export type AppStore = {
     proxyRulesImported: number;
   };
 };
+
+export interface ImportedConfig {
+  hosts?: Record<string, any>[];
+  groups?: Record<string, any>[];
+  profiles?: Record<string, any>[];
+  ports?: Record<string, any>[];
+  proxyRules?: Record<string, any>[];
+}

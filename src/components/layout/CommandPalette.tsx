@@ -14,7 +14,7 @@ interface CommandPaletteProps {
 
 export function CommandPalette({ open, onOpenChange, onNavigate }: CommandPaletteProps) {
   const { t } = useTranslation();
-  const { profiles, hosts, groups, activateProfile, updateHost } = useAppStore();
+  const { profiles, hosts, groups, activateProfile, updateHost, setHighlightedGroupId } = useAppStore();
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -89,7 +89,7 @@ export function CommandPalette({ open, onOpenChange, onNavigate }: CommandPalett
     } else if (item.category === "hosts") {
       updateHost(item.id, { enabled: !item.enabled });
     } else if (item.category === "groups") {
-      (window as any).__highlightGroupId = item.id;
+      setHighlightedGroupId(item.id);
       onNavigate("groups");
     }
     onOpenChange(false);
