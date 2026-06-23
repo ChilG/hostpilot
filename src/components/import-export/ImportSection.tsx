@@ -299,7 +299,7 @@ export function ImportSection() {
             </div>
 
             {(() => {
-              const activeProfile = profiles.find((p) => p.active);
+              const activeProfile = profiles.find((p) => p.active) || profiles[0];
               return activeProfile ? (
                 <div 
                   className="flex items-center space-x-2.5 p-3 rounded-lg bg-muted/10 border border-border/50 select-none cursor-pointer hover:bg-muted/20 transition-colors"
@@ -376,7 +376,7 @@ export function ImportSection() {
                   <div className="text-[11px] text-violet-400/80 flex items-center gap-1.5 mt-1 font-medium">
                     <span>➔ {t("activeProfile")}:</span>
                     <span>{(() => {
-                      const activeProfile = profiles.find((p) => p.active);
+                      const activeProfile = profiles.find((p) => p.active) || profiles[0];
                       return activeProfile ? activeProfile.name : "None";
                     })()}</span>
                   </div>

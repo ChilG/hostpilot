@@ -222,7 +222,7 @@ export function mergeImportedConfig(
   });
 
   // Add imported hosts to the active profile if requested
-  const activeProfile = nextProfiles.find((p) => p.active);
+  const activeProfile = nextProfiles.find((p) => p.active) || nextProfiles[0];
   if (addToActiveProfile && activeProfile && importedIds.length > 0) {
     const combinedIds = Array.from(new Set([...activeProfile.entryIds, ...importedIds]));
     nextProfiles = nextProfiles.map((p) =>

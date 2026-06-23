@@ -60,6 +60,17 @@ export function HostsPage() {
     .split("\n")
     .some((line) => line.startsWith("+") || line.startsWith("-"));
 
+  // Listen for background hosts file updates to refresh diff preview
+  useEffect(() => {
+    const handleHostsUpdated = () => {
+      setRefreshTrigger((prev) => prev + 1);
+    };
+    window.addEventListener("hosts-file-updated", handleHostsUpdated);
+    return () => {
+      window.removeEventListener("hosts-file-updated", handleHostsUpdated);
+    };
+  }, []);
+
   // Load live hosts diff
   useEffect(() => {
     async function loadDiff() {
@@ -192,6 +203,10 @@ export function HostsPage() {
             });
           }
         }
+
+        // Dispatch event to reload diff preview in UI and trigger local reload
+        window.dispatchEvent(new CustomEvent("hosts-file-updated"));
+        setRefreshTrigger((prev) => prev + 1);
 
         toast.success(t("syncSuccess", { domain: resolvedDomain }), { id: toastId });
       } else {

@@ -77,7 +77,7 @@ function AppContent() {
       const dynamicHosts = hosts.filter((h) => h.isDynamic && h.enabled);
       if (dynamicHosts.length === 0) return;
 
-      const activeProfile = profiles.find((p) => p.active) || profiles[0];
+      const activeProfile = profiles.find((p) => p.active);
       const now = Date.now();
 
       for (const host of dynamicHosts) {
@@ -112,6 +112,9 @@ function AppContent() {
                     entries: profileEntries,
                   });
                 }
+
+                // Dispatch event to reload diff preview in UI
+                window.dispatchEvent(new CustomEvent("hosts-file-updated"));
 
                 toast.success(`Domain rotated: ${resolvedDomain}`);
 

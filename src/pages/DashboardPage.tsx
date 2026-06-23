@@ -46,6 +46,17 @@ export function DashboardPage() {
   const activeProfile = profiles.find((p) => p.active) ||
     profiles[0] || { name: "None", id: "", entryIds: [] };
 
+  // Listen for background hosts file updates to refresh diff preview
+  useEffect(() => {
+    const handleHostsUpdated = () => {
+      setRefreshTrigger((prev) => prev + 1);
+    };
+    window.addEventListener("hosts-file-updated", handleHostsUpdated);
+    return () => {
+      window.removeEventListener("hosts-file-updated", handleHostsUpdated);
+    };
+  }, []);
+
   // Load live hosts diff
   useEffect(() => {
     async function loadDiff() {
