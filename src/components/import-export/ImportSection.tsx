@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 
 export function ImportSection() {
-  const { importConfig, groups } = useAppStore();
+  const { importConfig, groups, profiles } = useAppStore();
   const { t } = useTranslation();
 
   // JSON Import State
@@ -28,6 +28,8 @@ export function ImportSection() {
   const [rawText, setRawText] = useState("");
   const [parsedRawResult, setParsedRawResult] = useState<RawParseResult | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState("none");
+  const [duplicateStrategy, setDuplicateStrategy] = useState<"skip" | "overwrite" | "duplicate">("skip");
+  const [addToActiveProfile, setAddToActiveProfile] = useState(true);
 
   // JSON Import Handlers
   const processJsonText = (text: string) => {
@@ -109,7 +111,7 @@ export function ImportSection() {
 
       const { hostsImported } = importConfig({
         hosts: mappedHosts,
-      });
+      }, duplicateStrategy, addToActiveProfile);
 
       toast.success(t("importSuccessToast"), {
         description: t("rawImportSuccessDetail", {
@@ -129,6 +131,8 @@ export function ImportSection() {
     setRawText("");
     setParsedRawResult(null);
     setSelectedGroupId("none");
+    setDuplicateStrategy("skip");
+    setAddToActiveProfile(true);
     setRawImportStep("idle");
   };
 
@@ -269,6 +273,54 @@ export function ImportSection() {
               </div>
             )}
 
+            <div className="space-y-1.5">
+              <label className="text-[11px] text-muted-foreground font-medium">
+                {t("duplicateHandling")}
+              </label>
+              <Select
+                value={duplicateStrategy}
+                onValueChange={(v: any) => setDuplicateStrategy(v)}
+              >
+                <SelectTrigger className="w-full bg-muted/10 text-xs h-9 cursor-pointer">
+                  <SelectValue placeholder={t("duplicateHandling")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="skip" className="text-xs cursor-pointer">
+                    {t("duplicateStrategySkip")}
+                  </SelectItem>
+                  <SelectItem value="overwrite" className="text-xs cursor-pointer">
+                    {t("duplicateStrategyOverwrite")}
+                  </SelectItem>
+                  <SelectItem value="duplicate" className="text-xs cursor-pointer">
+                    {t("duplicateStrategyDuplicate")}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {(() => {
+              const activeProfile = profiles.find((p) => p.active);
+              return activeProfile ? (
+                <div 
+                  className="flex items-center space-x-2.5 p-3 rounded-lg bg-muted/10 border border-border/50 select-none cursor-pointer hover:bg-muted/20 transition-colors"
+                  onClick={() => setAddToActiveProfile(!addToActiveProfile)}
+                >
+                  <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
+                    addToActiveProfile ? "bg-violet-600 border-violet-600 text-white" : "border-muted-foreground/45 bg-transparent"
+                  }`}>
+                    {addToActiveProfile && (
+                      <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </div>
+                  <span className="text-[11px] font-medium text-foreground">
+                    {t("addToActiveProfileText", { name: activeProfile.name })}
+                  </span>
+                </div>
+              ) : null;
+            })()}
+
             <Button
               size="sm"
               className="w-full h-9 text-xs bg-violet-600 hover:bg-violet-700 text-white cursor-pointer"
@@ -308,6 +360,25 @@ export function ImportSection() {
                         </span>
                       ) : null;
                     })()}
+                  </div>
+                )}
+                <div className="text-[11px] text-violet-400/80 flex items-center gap-1.5 mt-1 font-medium">
+                  <span>➔ {t("duplicateHandling")}:</span>
+                  <span>
+                    {duplicateStrategy === "skip" 
+                      ? t("duplicateStrategySkip") 
+                      : duplicateStrategy === "overwrite" 
+                        ? t("duplicateStrategyOverwrite") 
+                        : t("duplicateStrategyDuplicate")}
+                  </span>
+                </div>
+                {addToActiveProfile && (
+                  <div className="text-[11px] text-violet-400/80 flex items-center gap-1.5 mt-1 font-medium">
+                    <span>➔ {t("activeProfile")}:</span>
+                    <span>{(() => {
+                      const activeProfile = profiles.find((p) => p.active);
+                      return activeProfile ? activeProfile.name : "None";
+                    })()}</span>
                   </div>
                 )}
               </div>

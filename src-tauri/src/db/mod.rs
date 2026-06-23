@@ -39,6 +39,7 @@ pub fn init_db(app_handle: &tauri::AppHandle) -> Result<(), String> {
         include_str!("../../migrations/0001_init.sql"),
         include_str!("../../migrations/0002_proxy.sql"),
         include_str!("../../migrations/0003_proxy_advanced.sql"),
+        include_str!("../../migrations/0004_dynamic_hosts.sql"),
     ];
     
     for (i, migration_sql) in migrations.iter().enumerate() {

@@ -53,7 +53,12 @@ pub fn save_config_to_db(app_handle: &tauri::AppHandle, config: &AppConfig) -> R
                 h.description,
                 h.source,
                 h.created_at,
-                h.updated_at
+                h.updated_at,
+                if h.is_dynamic { 1 } else { 0 },
+                h.dynamic_type,
+                h.dynamic_value,
+                h.last_synced,
+                h.sync_interval
             ],
         ).map_err(|e| format!("Failed to insert host: {}", e))?;
     }

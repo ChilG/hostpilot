@@ -5,7 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { useAppStore, type HostEntry, type HostGroup } from "@/store/AppStore";
 import { useTranslation } from "@/i18n/translations";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, RefreshCw } from "lucide-react";
 
 export const sourceColors: Record<HostEntry["source"], string> = {
   manual: "bg-slate-500/15 text-slate-400",
@@ -18,9 +18,10 @@ interface HostTableRowProps {
   onEdit: (host: HostEntry) => void;
   onDelete: (host: HostEntry) => void;
   onGroupClick?: (groupId: string) => void;
+  onSync?: (host: HostEntry) => Promise<void>;
 }
 
-export function HostTableRow({ host, group, onEdit, onDelete, onGroupClick }: HostTableRowProps) {
+export function HostTableRow({ host, group, onEdit, onDelete, onGroupClick, onSync }: HostTableRowProps) {
   const { updateHost } = useAppStore();
   const { t } = useTranslation();
 
@@ -39,7 +40,25 @@ export function HostTableRow({ host, group, onEdit, onDelete, onGroupClick }: Ho
         />
       </TableCell>
       <TableCell className="px-3 py-3">
-        <span className="font-mono text-sm font-medium text-foreground">{host.domain}</span>
+        <div className="flex flex-col gap-0.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="font-mono text-sm font-medium text-foreground">{host.domain}</span>
+            {host.isDynamic && (
+              <span
+                title={`${t("isDynamic")} (${host.dynamicType})`}
+                className="text-[9px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/25 rounded px-1 flex items-center gap-1 py-0.2 select-none"
+              >
+                <RefreshCw className="w-2 h-2" style={{ animation: "spin 4s linear infinite" }} />
+                <span>Rotated</span>
+              </span>
+            )}
+          </div>
+          {host.isDynamic && host.lastSynced && (
+            <div className="text-[10px] text-muted-foreground font-light">
+              {t("lastSynced", { time: new Date(host.lastSynced).toLocaleTimeString() })}
+            </div>
+          )}
+        </div>
       </TableCell>
       <TableCell className="px-3 py-3">
         <span className="font-mono text-xs text-muted-foreground">{host.ip}</span>
@@ -69,10 +88,21 @@ export function HostTableRow({ host, group, onEdit, onDelete, onGroupClick }: Ho
       </TableCell>
       <TableCell className="sticky right-0 bg-background group-hover:bg-[color-mix(in_srgb,var(--accent)_30%,var(--background))] transition-colors px-6 py-3 border-l border-border z-10">
         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          {host.isDynamic && onSync && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-muted-foreground hover:text-indigo-400 cursor-pointer"
+              onClick={() => onSync(host)}
+              title={t("syncNow")}
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+            className="h-7 w-7 text-muted-foreground hover:text-foreground cursor-pointer"
             onClick={() => onEdit(host)}
           >
             <Pencil className="w-3.5 h-3.5" />
@@ -80,7 +110,7 @@ export function HostTableRow({ host, group, onEdit, onDelete, onGroupClick }: Ho
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+            className="h-7 w-7 text-muted-foreground hover:text-destructive cursor-pointer"
             onClick={() => onDelete(host)}
           >
             <Trash2 className="w-3.5 h-3.5" />

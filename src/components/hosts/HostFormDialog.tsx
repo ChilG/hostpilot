@@ -19,6 +19,7 @@ import {
 import { useAppStore, type HostEntry } from "@/store/AppStore";
 import { useTranslation } from "@/i18n/translations";
 import { getHostSchema } from "@/lib/schemas";
+import { Switch } from "@/components/ui/switch";
 
 type Props = {
   open: boolean;
@@ -35,6 +36,10 @@ const DEFAULT_FORM = {
   description: "",
   source: "manual" as HostEntry["source"],
   enabled: true,
+  isDynamic: false,
+  dynamicType: "url" as "url" | "script",
+  dynamicValue: "",
+  syncInterval: 300,
 };
 
 export function HostFormDialog({ open, onOpenChange, mode, host, onSave }: Props) {
@@ -53,6 +58,10 @@ export function HostFormDialog({ open, onOpenChange, mode, host, onSave }: Props
           description: host.description ?? "",
           source: host.source,
           enabled: host.enabled,
+          isDynamic: host.isDynamic ?? false,
+          dynamicType: host.dynamicType ?? "url",
+          dynamicValue: host.dynamicValue ?? "",
+          syncInterval: host.syncInterval ?? 300,
         });
       } else {
         setForm(DEFAULT_FORM);
@@ -70,16 +79,29 @@ export function HostFormDialog({ open, onOpenChange, mode, host, onSave }: Props
       description: form.description.trim() || undefined,
     });
 
+    const fieldErrors: Record<string, string> = {};
     if (!result.success) {
-      const fieldErrors: Record<string, string> = {};
       result.error.issues.forEach((err) => {
         if (err.path[0]) {
           fieldErrors[err.path[0].toString()] = err.message;
         }
       });
-      return fieldErrors;
     }
-    return {};
+
+    if (form.isDynamic) {
+      const dynamicVal = form.dynamicValue.trim();
+      if (!dynamicVal) {
+        fieldErrors.dynamicValue = "Value is required for dynamic host";
+      } else if (form.dynamicType === "url") {
+        try {
+          new URL(dynamicVal);
+        } catch (_) {
+          fieldErrors.dynamicValue = "Must be a valid URL";
+        }
+      }
+    }
+
+    return fieldErrors;
   };
 
   const handleSave = () => {
@@ -96,6 +118,10 @@ export function HostFormDialog({ open, onOpenChange, mode, host, onSave }: Props
       description: form.description.trim() || undefined,
       source: form.source,
       enabled: form.enabled,
+      isDynamic: form.isDynamic,
+      dynamicType: form.isDynamic ? form.dynamicType : undefined,
+      dynamicValue: form.isDynamic ? form.dynamicValue.trim() : undefined,
+      syncInterval: form.isDynamic ? form.syncInterval : undefined,
     };
 
     if (mode === "create") {
@@ -109,7 +135,7 @@ export function HostFormDialog({ open, onOpenChange, mode, host, onSave }: Props
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{mode === "create" ? t("addHost") : t("editHost")}</DialogTitle>
         </DialogHeader>
@@ -168,14 +194,84 @@ export function HostFormDialog({ open, onOpenChange, mode, host, onSave }: Props
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
             />
           </div>
+
+          {/* Dynamic Host settings */}
+          <div className="flex items-center justify-between border border-border rounded-lg p-3 bg-muted/20 my-2">
+            <div className="space-y-0.5">
+              <Label htmlFor="host-dynamic" className="text-sm font-medium cursor-pointer">{t("isDynamic")}</Label>
+              <p className="text-[10px] text-muted-foreground font-light">Resolve domain dynamically via URL or Script</p>
+            </div>
+            <Switch
+              id="host-dynamic"
+              checked={form.isDynamic}
+              onCheckedChange={(checked) => setForm((f) => ({ ...f, isDynamic: checked }))}
+              className="scale-90"
+            />
+          </div>
+
+          {form.isDynamic && (
+            <div className="space-y-4 pt-2 border-t border-border mt-2 animate-in fade-in slide-in-from-top-1 duration-200">
+              <div className="space-y-1.5">
+                <Label>{t("dynamicType")}</Label>
+                <Select
+                  value={form.dynamicType}
+                  onValueChange={(v: "url" | "script") => setForm((f) => ({ ...f, dynamicType: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="url">{t("urlType")}</SelectItem>
+                    <SelectItem value="script">{t("scriptType")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="host-dynamic-val">{t("dynamicValue")} *</Label>
+                <Input
+                  id="host-dynamic-val"
+                  placeholder={form.dynamicType === "url" ? "https://example.com/redirect" : "echo mydomain.local"}
+                  value={form.dynamicValue}
+                  onChange={(e) => setForm((f) => ({ ...f, dynamicValue: e.target.value }))}
+                  className={errors.dynamicValue ? "border-red-500 text-xs" : "text-xs"}
+                />
+                {errors.dynamicValue && <p className="text-xs text-red-400">{errors.dynamicValue}</p>}
+                <p className="text-[10px] text-muted-foreground">
+                  {form.dynamicType === "url"
+                    ? "HTTP GET URL that redirects to the rotating domain or returns the domain string."
+                    : "Command string to run locally. Must print the domain to stdout."}
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>{t("syncInterval")}</Label>
+                <Select
+                  value={String(form.syncInterval)}
+                  onValueChange={(v) => setForm((f) => ({ ...f, syncInterval: Number(v) }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="30">{t("syncInterval30s")}</SelectItem>
+                    <SelectItem value="60">{t("syncInterval1m")}</SelectItem>
+                    <SelectItem value="300">{t("syncInterval5m")}</SelectItem>
+                    <SelectItem value="900">{t("syncInterval15m")}</SelectItem>
+                    <SelectItem value="3600">{t("syncInterval1h")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <DialogFooter className="pt-2 border-t border-border mt-4">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="cursor-pointer">
             {t("cancel")}
           </Button>
           <Button
-            className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer"
             onClick={handleSave}
           >
             {mode === "create" ? t("add") : t("save")}

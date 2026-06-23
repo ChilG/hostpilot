@@ -1,1 +1,1 @@
-SELECT id, domain, ip, enabled, group_id, description, source, created_at, updated_at FROM hosts;
+SELECT id, domain, ip, enabled, group_id, description, source, created_at, updated_at, is_dynamic, dynamic_type, dynamic_value, last_synced, sync_interval FROM hosts;

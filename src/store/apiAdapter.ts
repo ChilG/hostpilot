@@ -110,4 +110,21 @@ export const apiAdapter = {
       await invoke("restore_backup", { backupId });
     }
   },
+
+  async resolveDynamicHost(dynamicType: string, dynamicValue: string): Promise<string> {
+    if (isTauri) {
+      return await invoke<string>("resolve_dynamic_host", { dynamicType, dynamicValue });
+    }
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        if (dynamicValue.includes("fail")) {
+          reject(new Error("Mock HTTP 500 Internal Server Error"));
+        } else if (dynamicType === "url") {
+          resolve(`mock-rotated-${Math.floor(Math.random() * 1000)}.local`);
+        } else {
+          resolve("mock-script-resolved.local");
+        }
+      }, 800);
+    });
+  },
 };

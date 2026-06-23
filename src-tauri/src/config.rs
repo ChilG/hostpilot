@@ -12,6 +12,12 @@ pub struct HostEntry {
     pub source: String, // "manual" | "imported"
     pub created_at: String,
     pub updated_at: String,
+    #[serde(default)]
+    pub is_dynamic: bool,
+    pub dynamic_type: Option<String>,
+    pub dynamic_value: Option<String>,
+    pub last_synced: Option<String>,
+    pub sync_interval: Option<i32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

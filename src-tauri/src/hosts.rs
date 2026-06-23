@@ -61,7 +61,12 @@ fn build_managed_block(block_name: &str, entries: &[HostEntry]) -> String {
 }
 
 /// Replaces or appends a managed block in the hosts file content
-pub fn replace_managed_block(original_content: &str, block_name: &str, new_block: &str) -> String {
+pub fn replace_managed_block(
+    original_content: &str,
+    block_name: &str,
+    new_block: &str,
+    active_domains: &[String],
+) -> String {
     let lines: Vec<&str> = original_content.lines().collect();
     let mut new_lines = Vec::new();
     
@@ -77,7 +82,7 @@ pub fn replace_managed_block(original_content: &str, block_name: &str, new_block
             in_block = true;
             if !new_block.is_empty() {
                 for b_line in new_block.lines() {
-                    new_lines.push(b_line);
+                    new_lines.push(b_line.to_string());
                 }
             }
             block_replaced = true;
@@ -88,7 +93,23 @@ pub fn replace_managed_block(original_content: &str, block_name: &str, new_block
             continue;
         }
         if !in_block {
-            new_lines.push(line);
+            let mut line_to_push = line.to_string();
+            if !trimmed.is_empty() && !trimmed.starts_with('#') && !active_domains.is_empty() {
+                let content_part = match trimmed.split_once('#') {
+                    Some((before, _)) => before.trim(),
+                    None => trimmed,
+                };
+                let tokens: Vec<&str> = content_part.split_whitespace().collect();
+                if tokens.len() >= 2 {
+                    let has_conflict = tokens[1..].iter().any(|domain| {
+                        active_domains.contains(&domain.to_lowercase())
+                    });
+                    if has_conflict {
+                        line_to_push = format!("# [HostPilot Overridden] {}", line);
+                    }
+                }
+            }
+            new_lines.push(line_to_push);
         }
     }
     
@@ -96,10 +117,10 @@ pub fn replace_managed_block(original_content: &str, block_name: &str, new_block
     if !block_replaced && !new_block.is_empty() {
         // Ensure there is spacing before our block if content exists
         if !new_lines.is_empty() && !new_lines.last().unwrap().is_empty() {
-            new_lines.push("");
+            new_lines.push("".to_string());
         }
         for b_line in new_block.lines() {
-            new_lines.push(b_line);
+            new_lines.push(b_line.to_string());
         }
     }
     
@@ -113,12 +134,19 @@ pub fn replace_managed_block(original_content: &str, block_name: &str, new_block
 
 /// Generates a unified diff comparing the current system hosts file and the proposed update
 pub fn get_hosts_diff(block_name: &str, entries: &[HostEntry]) -> Result<String, String> {
-    let current_content = read_hosts_file()?;
+    let raw_current = read_hosts_file()?;
+    let current_content = raw_current.replace("\r\n", "\n").replace('\r', "\n");
     let new_block = build_managed_block(block_name, entries);
-    let updated_content = replace_managed_block(&current_content, block_name, &new_block);
+    let active_domains: Vec<String> = entries
+        .iter()
+        .filter(|h| h.enabled)
+        .map(|h| h.domain.to_lowercase())
+        .collect();
+    let updated_content = replace_managed_block(&current_content, block_name, &new_block, &active_domains);
+    let updated_normalized = updated_content.replace("\r\n", "\n").replace('\r', "\n");
     
     let mut diff_str = String::new();
-    let diff = TextDiff::from_lines(&current_content, &updated_content);
+    let diff = TextDiff::from_lines(&current_content, &updated_normalized);
     
     for change in diff.iter_all_changes() {
         let sign = match change.tag() {
@@ -262,27 +290,51 @@ pub fn write_hosts_block(
 ) -> Result<(), String> {
     let current_content = read_hosts_file()?;
     let new_block = build_managed_block(block_name, entries);
-    let updated_content = replace_managed_block(&current_content, block_name, &new_block);
+    let active_domains: Vec<String> = entries
+        .iter()
+        .filter(|h| h.enabled)
+        .map(|h| h.domain.to_lowercase())
+        .collect();
+    let updated_content = replace_managed_block(&current_content, block_name, &new_block, &active_domains);
     
     // Normalize line endings: convert \r\n to \n, then remaining \r to \n
     let normalized_content = updated_content.replace("\r\n", "\n").replace('\r', "\n");
     
-    // Write updated content to a temporary file in the app data directory
-    let app_dir = app_handle
-        .path()
-        .app_data_dir()
-        .map_err(|e| format!("Failed to get app data directory: {}", e))?;
-    let temp_hosts = app_dir.join("hosts.temp");
-    
-    fs::write(&temp_hosts, &normalized_content)
-        .map_err(|e| format!("Failed to write temporary hosts file: {}", e))?;
-        
-    // Execute administrative copy/write and flush DNS inside the same elevated call on macOS to avoid prompting twice
     let dest_hosts = Path::new(get_hosts_path());
-    let copy_res = copy_file_elevated(&temp_hosts, dest_hosts, true);
     
-    if let Err(e) = copy_res {
-        let _ = fs::remove_file(&temp_hosts);
+    // Try writing directly first (in case of user-writable hosts file, run as admin/root, etc.)
+    let direct_write_res = fs::write(dest_hosts, &normalized_content);
+    
+    let apply_res = match direct_write_res {
+        Ok(_) => {
+            // Direct write succeeded, flush DNS cache on macOS
+            #[cfg(target_os = "macos")]
+            {
+                let _ = Command::new("dscacheutil").arg("-flushcache").output();
+                let _ = Command::new("killall").args(&["-HUP", "mDNSResponder"]).output();
+            }
+            Ok(())
+        }
+        Err(_) => {
+            // Write updated content to a temporary file in the app data directory
+            let app_dir = app_handle
+                .path()
+                .app_data_dir()
+                .map_err(|e| format!("Failed to get app data directory: {}", e))?;
+            let temp_hosts = app_dir.join("hosts.temp");
+            
+            fs::write(&temp_hosts, &normalized_content)
+                .map_err(|e| format!("Failed to write temporary hosts file: {}", e))?;
+                
+            // Execute administrative copy/write and flush DNS inside the same elevated call on macOS to avoid prompting twice
+            let copy_res = copy_file_elevated(&temp_hosts, dest_hosts, true);
+            let _ = fs::remove_file(&temp_hosts);
+            
+            copy_res
+        }
+    };
+    
+    if let Err(e) = apply_res {
         return Err(format!("Failed to apply hosts file changes: {}", e));
     }
     
@@ -290,12 +342,8 @@ pub fn write_hosts_block(
     let verified_content = read_hosts_file()?;
     let verified_normalized = verified_content.replace("\r\n", "\n").replace('\r', "\n");
     if verified_normalized != normalized_content {
-        let _ = fs::remove_file(&temp_hosts);
         return Err("Verification failed: system hosts file content does not match the expected updated content.".to_string());
     }
-    
-    // Clean up temporary file
-    let _ = fs::remove_file(&temp_hosts);
     
     Ok(())
 }
@@ -355,17 +403,154 @@ pub fn delete_backup_file(
     Ok(())
 }
 
+/// Resolves a dynamic host domain via URL redirect or command execution
+pub async fn resolve_dynamic_host(
+    dynamic_type: String,
+    dynamic_value: String,
+) -> Result<String, String> {
+    if dynamic_type == "url" {
+        let client = reqwest::Client::builder()
+            .redirect(reqwest::redirect::Policy::none())
+            .build()
+            .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
+
+        let response = client
+            .get(&dynamic_value)
+            .send()
+            .await
+            .map_err(|e| format!("HTTP request failed: {}", e))?;
+
+        let status = response.status();
+
+        if status.is_redirection() {
+            if let Some(location) = response.headers().get(reqwest::header::LOCATION) {
+                let location_str = location.to_str().map_err(|e| e.to_string())?;
+                let parsed_url = reqwest::Url::parse(location_str)
+                    .or_else(|_| reqwest::Url::parse(&format!("http://{}", location_str)))
+                    .map_err(|e| format!("Failed to parse redirect Location URL: {}", e))?;
+                if let Some(host) = parsed_url.host_str() {
+                    return Ok(host.to_string());
+                }
+            }
+            return Err("Redirect status received, but Location header is missing or invalid".to_string());
+        } else if status.is_success() {
+            let body = response.text().await.map_err(|e| format!("Failed to read response body: {}", e))?;
+            
+            if let Ok(json_val) = serde_json::from_str::<serde_json::Value>(&body) {
+                if let Some(obj) = json_val.as_object() {
+                    for key in &["domain", "host", "hostname", "url"] {
+                        if let Some(val) = obj.get(*key) {
+                            if let Some(val_str) = val.as_str() {
+                                if let Some(extracted) = extract_host_from_text(val_str) {
+                                    return Ok(extracted);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if let Some(extracted) = extract_host_from_text(&body) {
+                return Ok(extracted);
+            }
+            
+            return Err(format!("Could not extract a valid domain name from response body: {}", body));
+        } else {
+            return Err(format!("Server returned HTTP status {}", status));
+        }
+    } else if dynamic_type == "script" {
+        #[cfg(target_os = "windows")]
+        let (shell, arg) = ("powershell", "-Command");
+        #[cfg(not(target_os = "windows"))]
+        let (shell, arg) = ("/bin/sh", "-c");
+
+        let output = Command::new(shell)
+            .arg(arg)
+            .arg(&dynamic_value)
+            .output()
+            .map_err(|e| format!("Failed to run script: {}", e))?;
+
+        if !output.status.success() {
+            let err = String::from_utf8_lossy(&output.stderr).trim().to_string();
+            return Err(format!(
+                "Script failed with code {}: {}",
+                output.status.code().unwrap_or(-1),
+                err
+            ));
+        }
+
+        let result = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if let Some(extracted) = extract_host_from_text(&result) {
+            return Ok(extracted);
+        }
+
+        return Err(format!("Script stdout '{}' is not a valid domain", result));
+    } else {
+        return Err(format!("Unsupported dynamic type: {}", dynamic_type));
+    }
+}
+
+fn extract_host_from_text(text: &str) -> Option<String> {
+    let trimmed = text.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    if let Ok(url) = reqwest::Url::parse(trimmed) {
+        if let Some(host) = url.host_str() {
+            return Some(host.to_string());
+        }
+    }
+    if let Ok(url) = reqwest::Url::parse(&format!("http://{}", trimmed)) {
+        if let Some(host) = url.host_str() {
+            let host_re = regex::Regex::new(r"^[a-zA-Z0-9][-a-zA-Z0-9.]*$").unwrap();
+            if host_re.is_match(host) {
+                return Some(host.to_string());
+            }
+        }
+    }
+    None
+}
+
 
 pub mod tests {
     #[test]
     fn test_replace_managed_block() {
         let original = "127.0.0.1 localhost\n# >>> HostPilot START: test\n127.0.0.1 test.local\n# <<< HostPilot END: test\n::1 localhost";
         let new_block = "# >>> HostPilot START: test\n127.0.0.1 new.local\n# <<< HostPilot END: test\n";
-        let result = super::replace_managed_block(original, "test", new_block);
+        let result = super::replace_managed_block(original, "test", new_block, &[]);
         assert!(result.contains("new.local"));
         assert!(!result.contains("test.local"));
         assert!(result.contains("127.0.0.1 localhost"));
         assert!(!result.contains("# <<< HostPilot END: test\n\n::1 localhost"));
         assert!(result.contains("# <<< HostPilot END: test\n::1 localhost"));
+    }
+
+    #[test]
+    fn test_replace_managed_block_crlf() {
+        let original = "127.0.0.1 localhost\r\n# >>> HostPilot START: test\r\n127.0.0.1 test.local\r\n# <<< HostPilot END: test\r\n::1 localhost";
+        let new_block = "# >>> HostPilot START: test\n127.0.0.1 new.local\n# <<< HostPilot END: test\n";
+        let result = super::replace_managed_block(original, "test", new_block, &[]);
+        assert!(result.contains("new.local"));
+        assert!(!result.contains("test.local"));
+        assert!(result.contains("127.0.0.1 localhost"));
+    }
+
+    #[test]
+    fn test_replace_managed_block_conflict() {
+        let original = "127.0.0.1 localhost\n192.168.1.1 conflict.local # Comment\n# >>> HostPilot START: test\n# <<< HostPilot END: test";
+        let new_block = "# >>> HostPilot START: test\n127.0.0.1 conflict.local\n# <<< HostPilot END: test\n";
+        let active_domains = vec!["conflict.local".to_string()];
+        let result = super::replace_managed_block(original, "test", new_block, &active_domains);
+        assert!(result.contains("# [HostPilot Overridden] 192.168.1.1 conflict.local # Comment"));
+        assert!(result.contains("127.0.0.1 conflict.local"));
+    }
+
+    #[test]
+    fn test_extract_host_from_text() {
+        assert_eq!(super::extract_host_from_text("myapp1120.com"), Some("myapp1120.com".to_string()));
+        assert_eq!(super::extract_host_from_text("http://myapp1120.com"), Some("myapp1120.com".to_string()));
+        assert_eq!(super::extract_host_from_text("https://myapp1120.com:8080/path?param=1"), Some("myapp1120.com".to_string()));
+        assert_eq!(super::extract_host_from_text("   myapp1120.com   \n"), Some("myapp1120.com".to_string()));
+        assert_eq!(super::extract_host_from_text("invalid host name"), None);
     }
 }

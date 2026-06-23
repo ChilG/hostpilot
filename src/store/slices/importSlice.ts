@@ -12,13 +12,17 @@ const now = () => new Date().toISOString();
 // ─── Slice Types ────────────────────────────────────────────────────────────
 
 export type ImportSlice = {
-  importConfig: (config: {
-    hosts?: any[];
-    groups?: any[];
-    profiles?: any[];
-    ports?: any[];
-    proxyRules?: any[];
-  }) => {
+  importConfig: (
+    config: {
+      hosts?: any[];
+      groups?: any[];
+      profiles?: any[];
+      ports?: any[];
+      proxyRules?: any[];
+    },
+    duplicateStrategy?: "skip" | "overwrite" | "duplicate",
+    addToActiveProfile?: boolean
+  ) => {
     hostsImported: number;
     groupsImported: number;
     profilesImported: number;
@@ -30,7 +34,7 @@ export type ImportSlice = {
 // ─── Slice Creator ──────────────────────────────────────────────────────────
 
 export const createImportSlice: StateCreator<AppStore, [], [], ImportSlice> = (set, get) => ({
-  importConfig: (configData) => {
+  importConfig: (configData, duplicateStrategy, addToActiveProfile) => {
     const defaultImportedDesc = t(get, "notif.importedJsonDesc");
     const state = get();
     const {
@@ -51,7 +55,9 @@ export const createImportSlice: StateCreator<AppStore, [], [], ImportSlice> = (s
       },
       uid,
       now,
-      defaultImportedDesc
+      defaultImportedDesc,
+      duplicateStrategy,
+      addToActiveProfile
     );
 
     // Apply updates if any changes occurred

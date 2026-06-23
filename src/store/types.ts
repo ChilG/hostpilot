@@ -15,6 +15,11 @@ export type HostEntry = {
   source: "manual" | "imported";
   createdAt: string;
   updatedAt: string;
+  isDynamic?: boolean;
+  dynamicType?: "url" | "script";
+  dynamicValue?: string;
+  lastSynced?: string;
+  syncInterval?: number;
 };
 
 export type HostGroup = {
@@ -195,13 +200,17 @@ export type AppStore = {
   markAllNotificationsAsRead: () => void;
 
   // Import / Export
-  importConfig: (config: {
-    hosts?: any[];
-    groups?: any[];
-    profiles?: any[];
-    ports?: any[];
-    proxyRules?: any[];
-  }) => {
+  importConfig: (
+    config: {
+      hosts?: any[];
+      groups?: any[];
+      profiles?: any[];
+      ports?: any[];
+      proxyRules?: any[];
+    },
+    duplicateStrategy?: "skip" | "overwrite" | "duplicate",
+    addToActiveProfile?: boolean
+  ) => {
     hostsImported: number;
     groupsImported: number;
     profilesImported: number;

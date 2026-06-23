@@ -36,7 +36,9 @@ export function mergeImportedConfig(
   currentState: CurrentStoreState,
   uid: () => string,
   now: () => string,
-  defaultImportedDesc: string
+  defaultImportedDesc: string,
+  duplicateStrategy: "skip" | "overwrite" | "duplicate" = "skip",
+  addToActiveProfile: boolean = false
 ): MergeResult {
   const groupsData = configData.groups || [];
   const hostsData = configData.hosts || [];
@@ -52,6 +54,7 @@ export function mergeImportedConfig(
 
   const groupOldToNewId: Record<string, string> = {};
   const hostOldToNewId: Record<string, string> = {};
+  const importedIds: string[] = [];
 
   // 1. Merge Groups
   let nextGroups = [...currentState.groups];
@@ -78,9 +81,56 @@ export function mergeImportedConfig(
   hostsData.forEach((h) => {
     const domain = h.domain || h.name;
     if (!domain || !h.ip) return;
+    
     const existing = nextHosts.find((eh) => eh.domain.toLowerCase() === domain.toLowerCase());
-    if (existing) {
+    
+    if (existing && duplicateStrategy === "skip") {
       hostOldToNewId[h.id || h.name] = existing.id;
+      importedIds.push(existing.id);
+    } else if (existing && duplicateStrategy === "overwrite") {
+      hostOldToNewId[h.id || h.name] = existing.id;
+      importedIds.push(existing.id);
+      
+      const oldGroupId = h.groupId || h.group_id;
+      let newGroupId: string | undefined = undefined;
+
+      if (oldGroupId) {
+        if (groupOldToNewId[oldGroupId]) {
+          newGroupId = groupOldToNewId[oldGroupId];
+        } else {
+          // Direct ID match
+          const directMatch = nextGroups.find((eg) => eg.id === oldGroupId);
+          if (directMatch) {
+            newGroupId = directMatch.id;
+          }
+        }
+      }
+
+      if (!newGroupId && h.group) {
+        // Look up by group name
+        const matchedGroup = nextGroups.find(
+          (eg) => eg.name.toLowerCase() === h.group.toLowerCase()
+        );
+        if (matchedGroup) {
+          newGroupId = matchedGroup.id;
+        }
+      }
+
+      nextHosts = nextHosts.map((eh) => {
+        if (eh.id === existing.id) {
+          return {
+            ...eh,
+            ip: h.ip,
+            enabled: h.enabled !== false,
+            groupId: newGroupId || eh.groupId,
+            description: h.description || eh.description || defaultImportedDesc,
+            source: "imported",
+            updatedAt: now(),
+          };
+        }
+        return eh;
+      });
+      hostsImported++;
     } else {
       const newId = uid();
       const oldGroupId = h.groupId || h.group_id;
@@ -120,6 +170,7 @@ export function mergeImportedConfig(
         updatedAt: now(),
       });
       hostOldToNewId[h.id || h.name] = newId;
+      importedIds.push(newId);
       hostsImported++;
     }
   });
@@ -169,6 +220,16 @@ export function mergeImportedConfig(
       profilesImported++;
     }
   });
+
+  // Add imported hosts to the active profile if requested
+  const activeProfile = nextProfiles.find((p) => p.active);
+  if (addToActiveProfile && activeProfile && importedIds.length > 0) {
+    const combinedIds = Array.from(new Set([...activeProfile.entryIds, ...importedIds]));
+    nextProfiles = nextProfiles.map((p) =>
+      p.id === activeProfile.id ? { ...p, entryIds: combinedIds, updatedAt: now() } : p
+    );
+    profilesImported++;
+  }
 
   // 4. Merge Ports
   let nextPorts = [...currentState.ports];

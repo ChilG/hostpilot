@@ -37,6 +37,7 @@ pub fn load_config_from_db(app_handle: &tauri::AppHandle) -> Result<AppConfig, S
         .map_err(|e| e.to_string())?;
     let hosts_iter = stmt.query_map([], |row| {
         let enabled_val: i32 = row.get(3)?;
+        let is_dynamic_val: i32 = row.get(9).unwrap_or(0);
         Ok(HostEntry {
             id: row.get(0)?,
             domain: row.get(1)?,
@@ -47,6 +48,11 @@ pub fn load_config_from_db(app_handle: &tauri::AppHandle) -> Result<AppConfig, S
             source: row.get(6)?,
             created_at: row.get(7)?,
             updated_at: row.get(8)?,
+            is_dynamic: is_dynamic_val != 0,
+            dynamic_type: row.get(10).ok(),
+            dynamic_value: row.get(11).ok(),
+            last_synced: row.get(12).ok(),
+            sync_interval: row.get(13).ok(),
         })
     }).map_err(|e| e.to_string())?;
     let mut hosts = Vec::new();

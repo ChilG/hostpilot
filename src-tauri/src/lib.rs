@@ -95,6 +95,14 @@ fn delete_backup_file(app_handle: tauri::AppHandle, backup_id: String) -> Result
 }
 
 #[tauri::command]
+async fn resolve_dynamic_host(
+    dynamic_type: String,
+    dynamic_value: String,
+) -> Result<String, String> {
+    hosts::resolve_dynamic_host(dynamic_type, dynamic_value).await
+}
+
+#[tauri::command]
 fn load_app_config(app_handle: tauri::AppHandle) -> Result<AppConfig, String> {
     config::load_config(&app_handle)
 }
@@ -228,7 +236,8 @@ pub fn run() {
             stop_proxy_server,
             get_proxy_status,
             check_ca_status,
-            install_root_ca
+            install_root_ca,
+            resolve_dynamic_host
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
