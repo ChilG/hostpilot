@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { type HostProfile, type HostEntry } from "@/store/AppStore";
+import { getProfileHosts } from "@/store/types";
 import { useTranslation } from "@/i18n/translations";
 import {
   Zap,
@@ -14,7 +15,7 @@ import {
 } from "lucide-react";
 
 export function exportProfile(profile: HostProfile, hosts: HostEntry[]) {
-  const entries = hosts.filter((h) => profile.entryIds.includes(h.id));
+  const entries = getProfileHosts(profile, hosts);
   const data = {
     version: "1.0.0",
     profile: profile.name,
@@ -52,7 +53,7 @@ export function ProfileCard({
   onDelete,
 }: ProfileCardProps) {
   const { t } = useTranslation();
-  const entries = hosts.filter((h) => profile.entryIds.includes(h.id));
+  const entries = getProfileHosts(profile, hosts);
 
   return (
     <div className="rounded-xl border border-border bg-card p-5 space-y-4 hover:border-border/60 transition-colors group">

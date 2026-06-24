@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { isTauri } from "../types";
+import { isTauri, getProfileHosts } from "../types";
 import { useAppStore } from "../AppStore";
 
 /**
@@ -12,7 +12,7 @@ export async function applyActiveProfile(): Promise<void> {
   const activeProfile = profiles.find((p) => p.active);
   if (!activeProfile) return;
 
-  const profileEntries = hosts.filter((h) => activeProfile.entryIds?.includes(h.id));
+  const profileEntries = getProfileHosts(activeProfile, hosts);
 
   if (isTauri) {
     await invoke("write_hosts_block", {

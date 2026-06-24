@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { type HostProfile } from "@/store/AppStore";
+import { useAppStore, type HostProfile } from "@/store/AppStore";
+import { getProfileHosts } from "@/store/types";
 import { useTranslation } from "@/i18n/translations";
 import { CheckCircle2 } from "lucide-react";
 
@@ -11,6 +12,8 @@ interface ActiveProfileBannerProps {
 
 export function ActiveProfileBanner({ profile, onDeactivate }: ActiveProfileBannerProps) {
   const { t } = useTranslation();
+  const hosts = useAppStore((state) => state.hosts);
+  const resolvedHosts = getProfileHosts(profile, hosts);
 
   return (
     <div
@@ -32,7 +35,7 @@ export function ActiveProfileBanner({ profile, onDeactivate }: ActiveProfileBann
       </div>
       <div className="flex items-center gap-4 text-right">
         <div>
-          <p className="text-lg font-bold">{profile.entryIds.length}</p>
+          <p className="text-lg font-bold">{resolvedHosts.length}</p>
           <p className="text-[10px] text-muted-foreground">{t("hostsEnabledCount")}</p>
         </div>
         <Button

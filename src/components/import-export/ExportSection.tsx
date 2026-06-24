@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useAppStore, isTauri } from "@/store/AppStore";
 import { useTranslation } from "@/i18n/translations";
 import { FileJson, Download, CheckCircle2 } from "lucide-react";
+import { isHostInProfile } from "@/store/types";
 
 export function ExportSection() {
   const { hosts, groups, profiles, ports } = useAppStore();
@@ -13,10 +14,9 @@ export function ExportSection() {
   const [exportScope, setExportScope] = useState<"active" | "all">("active");
 
   const activeProfile = profiles.find((p) => p.active) || profiles[0];
-  const activeHostIds = activeProfile ? activeProfile.entryIds : [];
   const exportHosts =
     exportScope === "active"
-      ? hosts.filter((h) => activeHostIds.includes(h.id))
+      ? hosts.filter((h) => isHostInProfile(activeProfile, h))
       : hosts;
 
   // Generate dynamic JSON config content
@@ -101,12 +101,12 @@ export function ExportSection() {
             {
               id: "active",
               label: t("activeProfile"),
-              count: exportScope === "active" ? exportHosts.length : activeHostIds.length,
+              count: hosts.filter((h) => isHostInProfile(activeProfile, h)).length,
             },
             {
               id: "all",
               label: t("allHostsLabel"),
-              count: exportScope === "all" ? exportHosts.length : hosts.length,
+              count: hosts.length,
             },
           ].map((scope) => (
             <button

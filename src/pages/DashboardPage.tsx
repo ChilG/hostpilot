@@ -17,6 +17,7 @@ import {
 import { useAppStore, isTauri } from "@/store/AppStore";
 import { useTranslation } from "@/i18n/translations";
 import { Zap } from "lucide-react";
+import { getProfileHosts, NULL_PROFILE } from "@/store/types";
 
 import { StatusCardList } from "@/components/dashboard/StatusCardList";
 import { RecentPortsList } from "@/components/dashboard/RecentPortsList";
@@ -43,15 +44,14 @@ export function DashboardPage() {
   } = useApplyChanges();
 
   const [restoreConfirmOpen, setRestoreConfirmOpen] = useState(false);
-  const [diff, setDiff] = useState<string>("");
+  const [diff, setDiff] = useState("");
 
   const hasPendingChanges = useMemo(() => {
     return diff.split("\n").some((line) => line.startsWith("+") || line.startsWith("-"));
   }, [diff]);
 
   const activeProfile = useMemo(() => {
-    return profiles.find((p) => p.active) ||
-      profiles[0] || { name: "None", id: "", entryIds: [] };
+    return profiles.find((p) => p.active) || profiles[0] || NULL_PROFILE;
   }, [profiles]);
 
   // Listen for background hosts file updates to refresh diff preview
@@ -73,9 +73,7 @@ export function DashboardPage() {
         return;
       }
       try {
-        const profileEntries = hosts.filter((h) =>
-          activeProfile.entryIds?.includes(h.id)
-        );
+        const profileEntries = getProfileHosts(activeProfile, hosts);
         if (isTauri) {
           const result = await invoke<string>("get_hosts_diff", {
             blockName: activeProfile.name,

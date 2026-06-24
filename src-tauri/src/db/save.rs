@@ -3,6 +3,7 @@ use crate::config::*;
 use super::get_connection;
 
 const QUERY_DELETE_ALL_PROFILE_ENTRIES: &str = include_str!("../../queries/delete_all_profile_entries.sql");
+const QUERY_DELETE_ALL_PROFILE_GROUPS: &str = include_str!("../../queries/delete_all_profile_groups.sql");
 const QUERY_DELETE_ALL_PROFILES: &str = include_str!("../../queries/delete_all_profiles.sql");
 const QUERY_DELETE_ALL_HOSTS: &str = include_str!("../../queries/delete_all_hosts.sql");
 const QUERY_DELETE_ALL_GROUPS: &str = include_str!("../../queries/delete_all_groups.sql");
@@ -15,7 +16,9 @@ const QUERY_INSERT_GROUP: &str = include_str!("../../queries/insert_group.sql");
 const QUERY_INSERT_HOST: &str = include_str!("../../queries/insert_host.sql");
 const QUERY_INSERT_PROFILE: &str = include_str!("../../queries/insert_profile.sql");
 const QUERY_CHECK_HOST_EXISTS: &str = include_str!("../../queries/check_host_exists.sql");
+const QUERY_CHECK_GROUP_EXISTS: &str = include_str!("../../queries/check_group_exists.sql");
 const QUERY_INSERT_PROFILE_ENTRY: &str = include_str!("../../queries/insert_profile_entry.sql");
+const QUERY_INSERT_PROFILE_GROUP: &str = include_str!("../../queries/insert_profile_group.sql");
 const QUERY_INSERT_PORT: &str = include_str!("../../queries/insert_port.sql");
 const QUERY_INSERT_BACKUP: &str = include_str!("../../queries/insert_backup.sql");
 const QUERY_INSERT_APP_STATE: &str = include_str!("../../queries/insert_app_state.sql");
@@ -26,6 +29,7 @@ pub fn save_config_to_db(app_handle: &tauri::AppHandle, config: &AppConfig) -> R
     let tx = conn.transaction().map_err(|e| format!("Failed to start transaction: {}", e))?;
     
     tx.execute(QUERY_DELETE_ALL_PROFILE_ENTRIES, []).map_err(|e| e.to_string())?;
+    tx.execute(QUERY_DELETE_ALL_PROFILE_GROUPS, []).map_err(|e| e.to_string())?;
     tx.execute(QUERY_DELETE_ALL_PROFILES, []).map_err(|e| e.to_string())?;
     tx.execute(QUERY_DELETE_ALL_HOSTS, []).map_err(|e| e.to_string())?;
     tx.execute(QUERY_DELETE_ALL_GROUPS, []).map_err(|e| e.to_string())?;
@@ -89,6 +93,21 @@ pub fn save_config_to_db(app_handle: &tauri::AppHandle, config: &AppConfig) -> R
                     QUERY_INSERT_PROFILE_ENTRY,
                     params![p.id, host_id],
                 ).map_err(|e| format!("Failed to insert profile entry: {}", e))?;
+            }
+        }
+
+        for group_id in &p.group_ids {
+            let exists: bool = tx.query_row(
+                QUERY_CHECK_GROUP_EXISTS,
+                params![group_id],
+                |row| row.get(0),
+            ).unwrap_or(false);
+
+            if exists {
+                tx.execute(
+                    QUERY_INSERT_PROFILE_GROUP,
+                    params![p.id, group_id],
+                ).map_err(|e| format!("Failed to insert profile group: {}", e))?;
             }
         }
     }

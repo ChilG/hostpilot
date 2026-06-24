@@ -34,10 +34,37 @@ export type HostProfile = {
   name: string;
   description?: string;
   entryIds: string[];
+  groupIds: string[];
   active: boolean;
   favorite: boolean;
   createdAt: string;
   updatedAt: string;
+};
+
+export function isHostInProfile(profile: HostProfile | null | undefined, host: { id: string; groupId?: string }): boolean {
+  if (!profile) return false;
+  return (
+    (profile.entryIds && profile.entryIds.includes(host.id)) ||
+    (host.groupId !== undefined && profile.groupIds && profile.groupIds.includes(host.groupId))
+  );
+}
+
+export function getProfileHosts(profile: HostProfile | null | undefined, hosts: HostEntry[]): HostEntry[] {
+  if (!profile) return [];
+  return hosts.filter((h) => isHostInProfile(profile, h));
+}
+
+/** Sentinel value used as a safe fallback when no profile is active. */
+export const NULL_PROFILE: HostProfile = {
+  id: "",
+  name: "None",
+  description: undefined,
+  entryIds: [],
+  groupIds: [],
+  active: false,
+  favorite: false,
+  createdAt: "",
+  updatedAt: "",
 };
 
 export type PortRule = {

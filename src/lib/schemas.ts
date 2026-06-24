@@ -33,7 +33,8 @@ export const getProfileSchema = (t: (key: string) => string) =>
   z.object({
     name: z.string().min(1, { message: t("validation.profileNameRequired") }),
     description: z.string().optional(),
-    entryIds: z.array(z.string()),
+    entryIds: z.array(z.string()).optional(),
+    groupIds: z.array(z.string()).optional(),
   });
 
 export const getPortSchema = (t: (key: string) => string) =>

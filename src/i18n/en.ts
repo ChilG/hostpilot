@@ -136,6 +136,10 @@ export const en = {
   deleteProfileText: "Are you sure you want to delete this profile? This will not delete the host mappings themselves.",
   hostsSelectedText: "{count} selected",
   noHostsYetMessage: "No hosts yet. Add some on the Hosts page.",
+  selectGroups: "Select Groups",
+  selectHostsTab: "Individual Hosts",
+  selectGroupsTab: "Select by Groups",
+  groupsSelectedText: "{count} groups selected",
 
   // Ports Page
   addPort: "Add Port Rule",

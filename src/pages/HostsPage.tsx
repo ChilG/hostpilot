@@ -33,6 +33,7 @@ import { HostTableRow } from "@/components/hosts/HostTableRow";
 import { LiveDiffPreview } from "@/components/dashboard/LiveDiffPreview";
 import { useTranslation } from "@/i18n/translations";
 import { Plus, Search, Filter, Globe, PowerOff, Check, Zap } from "lucide-react";
+import { getProfileHosts, isHostInProfile, NULL_PROFILE } from "@/store/types";
 
 export function HostsPage() {
   const {
@@ -70,9 +71,28 @@ export function HostsPage() {
   const [diff, setDiff] = useState<string>("");
 
   const activeProfile = useMemo(() => {
-    return profiles.find((p) => p.active) ||
-      profiles[0] || { name: "None", id: "", entryIds: [] };
+    return profiles.find((p) => p.active) || profiles[0] || NULL_PROFILE;
   }, [profiles]);
+
+  const visibleGroups = useMemo(() => {
+    const active = profiles.find((p) => p.active);
+    if (!active) return groups;
+    return groups.filter((g) => {
+      const belongsToActive = active.groupIds?.includes(g.id);
+      const isOrphan = !profiles.some((p) => p.groupIds?.includes(g.id));
+      return belongsToActive || isOrphan;
+    });
+  }, [groups, profiles]);
+
+  useEffect(() => {
+    if (
+      filterGroup &&
+      filterGroup !== "__ungrouped__" &&
+      !visibleGroups.some((g) => g.id === filterGroup)
+    ) {
+      setFilterGroup(null);
+    }
+  }, [visibleGroups, filterGroup]);
 
   const hasPendingChanges = useMemo(() => {
     return diff.split("\n").some((line) => line.startsWith("+") || line.startsWith("-"));
@@ -97,9 +117,7 @@ export function HostsPage() {
         return;
       }
       try {
-        const profileEntries = hosts.filter((h) =>
-          activeProfile.entryIds?.includes(h.id)
-        );
+        const profileEntries = getProfileHosts(activeProfile, hosts);
         if (isTauri) {
           const result = await invoke<string>("get_hosts_diff", {
             blockName: activeProfile.name,
@@ -147,7 +165,7 @@ export function HostsPage() {
         });
 
         // Auto-apply if it is in the active profile
-        if (activeProfile && activeProfile.id && activeProfile.entryIds?.includes(host.id)) {
+        if (isHostInProfile(activeProfile, host)) {
           await applyActiveProfile();
         } else {
           // Dispatch event to reload diff preview in UI and trigger local reload
@@ -218,15 +236,28 @@ export function HostsPage() {
   };
 
   const filtered = useMemo(() => {
+    const active = profiles.find((p) => p.active);
     return hosts.filter((h) => {
+      if (active) {
+        const belongsToActive = isHostInProfile(active, h);
+        const isOrphan = !profiles.some((p) => isHostInProfile(p, h));
+        if (!belongsToActive && !isOrphan) {
+          return false;
+        }
+      }
       const matchSearch =
         h.domain.toLowerCase().includes(search.toLowerCase()) ||
         h.ip.includes(search) ||
         (h.description ?? "").toLowerCase().includes(search.toLowerCase());
-      const matchGroup = filterGroup ? h.groupId === filterGroup : true;
+      const matchGroup =
+        filterGroup === "__ungrouped__"
+          ? !h.groupId
+          : filterGroup
+          ? h.groupId === filterGroup
+          : true;
       return matchSearch && matchGroup;
     });
-  }, [hosts, search, filterGroup]);
+  }, [hosts, search, filterGroup, profiles]);
 
   const openCreate = () => {
     setFormMode("create");
@@ -363,7 +394,17 @@ export function HostsPage() {
             >
               {t("all")}
             </button>
-            {groups.map((g) => (
+            <button
+              onClick={() => setFilterGroup("__ungrouped__")}
+              className={`text-xs px-2.5 py-1 rounded-full transition-colors flex-shrink-0 cursor-pointer ${
+                filterGroup === "__ungrouped__"
+                  ? "bg-indigo-600 text-white"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
+              {t("noGroup")}
+            </button>
+            {visibleGroups.map((g) => (
               <button
                 key={g.id}
                 onClick={() => setFilterGroup(filterGroup === g.id ? null : g.id)}

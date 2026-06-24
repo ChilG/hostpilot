@@ -136,6 +136,10 @@ export const th = {
   deleteProfileText: "คุณแน่ใจหรือไม่ว่าต้องการลบโปรไฟล์นี้? การลบโปรไฟล์จะไม่ส่งผลกระทบให้รายการโฮสต์ต้นทางหายไป",
   hostsSelectedText: "{count} ที่เลือกอยู่",
   noHostsYetMessage: "ยังไม่มีรายการโฮสต์ในระบบ กรุณาเพิ่มที่หน้าโฮสต์",
+  selectGroups: "เลือกตามกลุ่มโฮสต์",
+  selectHostsTab: "เลือกรายโฮสต์",
+  selectGroupsTab: "เลือกตามกลุ่ม",
+  groupsSelectedText: "{count} กลุ่มที่เลือก",
 
   // Ports Page
   addPort: "เพิ่มกฎพอร์ต",

@@ -20,7 +20,7 @@ export type GroupsSlice = {
 
 // ─── Slice Creator ──────────────────────────────────────────────────────────
 
-export const createGroupsSlice: StateCreator<AppStore, [], [], GroupsSlice> = (set) => ({
+export const createGroupsSlice: StateCreator<AppStore, [], [], GroupsSlice> = (set, get) => ({
   groups: [],
   highlightedGroupId: null,
 
@@ -29,9 +29,19 @@ export const createGroupsSlice: StateCreator<AppStore, [], [], GroupsSlice> = (s
   },
 
   addGroup: (g) => {
+    const newId = uid();
     set((state) => ({
-      groups: [...state.groups, { ...g, id: uid() }],
+      groups: [...state.groups, { ...g, id: newId }],
     }));
+
+    // Automatically add group to active profile if one is active
+    const activeProfile = get().profiles.find((p) => p.active);
+    if (activeProfile) {
+      const updatedGroupIds = [...(activeProfile.groupIds || []), newId];
+      get().updateProfile(activeProfile.id, {
+        groupIds: updatedGroupIds,
+      });
+    }
   },
 
   updateGroup: (id, patch) => {
@@ -44,18 +54,25 @@ export const createGroupsSlice: StateCreator<AppStore, [], [], GroupsSlice> = (s
     set((state) => {
       let nextHosts = state.hosts;
       let nextProfiles = state.profiles;
+
       if (deleteAssociatedHosts) {
         const hostIdsToDelete = state.hosts.filter((h) => h.groupId === id).map((h) => h.id);
         nextHosts = state.hosts.filter((h) => h.groupId !== id);
         nextProfiles = state.profiles.map((p) => ({
           ...p,
           entryIds: p.entryIds.filter((e) => !hostIdsToDelete.includes(e)),
+          groupIds: p.groupIds.filter((gId) => gId !== id),
         }));
       } else {
         nextHosts = state.hosts.map((h) =>
           h.groupId === id ? { ...h, groupId: undefined, updatedAt: now() } : h
         );
+        nextProfiles = state.profiles.map((p) => ({
+          ...p,
+          groupIds: p.groupIds.filter((gId) => gId !== id),
+        }));
       }
+
       return {
         groups: state.groups.filter((g) => g.id !== id),
         hosts: nextHosts,

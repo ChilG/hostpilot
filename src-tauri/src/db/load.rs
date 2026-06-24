@@ -6,6 +6,7 @@ const QUERY_SELECT_GROUPS: &str = include_str!("../../queries/select_groups.sql"
 const QUERY_SELECT_HOSTS: &str = include_str!("../../queries/select_hosts.sql");
 const QUERY_SELECT_PROFILES: &str = include_str!("../../queries/select_profiles.sql");
 const QUERY_SELECT_PROFILE_ENTRIES: &str = include_str!("../../queries/select_profile_entries.sql");
+const QUERY_SELECT_PROFILE_GROUPS: &str = include_str!("../../queries/select_profile_groups.sql");
 const QUERY_SELECT_PORTS: &str = include_str!("../../queries/select_ports.sql");
 const QUERY_SELECT_BACKUPS: &str = include_str!("../../queries/select_backups.sql");
 const QUERY_SELECT_APP_STATE_ONBOARDED: &str = include_str!("../../queries/select_app_state_onboarded.sql");
@@ -82,12 +83,22 @@ pub fn load_config_from_db(app_handle: &tauri::AppHandle) -> Result<AppConfig, S
         for ent in entries_iter {
             entry_ids.push(ent.map_err(|e| e.to_string())?);
         }
+
+        let mut group_stmt = conn.prepare(QUERY_SELECT_PROFILE_GROUPS)
+            .map_err(|e| e.to_string())?;
+        let groups_iter = group_stmt.query_map([&id], |r| r.get::<_, String>(0))
+            .map_err(|e| e.to_string())?;
+        let mut group_ids = Vec::new();
+        for gid in groups_iter {
+            group_ids.push(gid.map_err(|e| e.to_string())?);
+        }
         
         profiles.push(HostProfile {
             id,
             name,
             description,
             entry_ids,
+            group_ids,
             active,
             favorite,
             created_at,

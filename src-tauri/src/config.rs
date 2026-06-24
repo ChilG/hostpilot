@@ -36,6 +36,8 @@ pub struct HostProfile {
     pub name: String,
     pub description: Option<String>,
     pub entry_ids: Vec<String>,
+    #[serde(default)]
+    pub group_ids: Vec<String>,
     pub active: bool,
     pub favorite: bool,
     pub created_at: String,

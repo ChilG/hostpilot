@@ -28,7 +28,13 @@ export const createProfilesSlice: StateCreator<AppStore, [], [], ProfilesSlice> 
     set((state) => ({
       profiles: [
         ...state.profiles,
-        { ...p, id: uid(), createdAt: now(), updatedAt: now() },
+        { 
+          ...p, 
+          groupIds: p.groupIds || [], 
+          id: uid(), 
+          createdAt: now(), 
+          updatedAt: now() 
+        },
       ],
     }));
   },
@@ -59,6 +65,8 @@ export const createProfilesSlice: StateCreator<AppStore, [], [], ProfilesSlice> 
           name: `Copy of ${src.name}`,
           active: false,
           favorite: false,
+          entryIds: [...src.entryIds],
+          groupIds: src.groupIds ? [...src.groupIds] : [],
           createdAt: now(),
           updatedAt: now(),
         },

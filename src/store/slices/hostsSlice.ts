@@ -30,6 +30,19 @@ export const createHostsSlice: StateCreator<AppStore, [], [], HostsSlice> = (set
     set((state) => ({
       hosts: [...state.hosts, { ...h, id: newId, createdAt: now(), updatedAt: now() }],
     }));
+
+    // Automatically add to active profile if one is active and not already covered by group
+    const activeProfile = get().profiles.find((p) => p.active);
+    if (activeProfile) {
+      const isCoveredByGroup = h.groupId ? activeProfile.groupIds.includes(h.groupId) : false;
+      if (!isCoveredByGroup) {
+        const updatedEntryIds = [...(activeProfile.entryIds || []), newId];
+        get().updateProfile(activeProfile.id, {
+          entryIds: updatedEntryIds,
+        });
+      }
+    }
+
     get().addNotification(
       t(get, "notif.hostCreatedTitle"),
       t(get, "notif.hostCreatedDesc", { domain: h.domain }),

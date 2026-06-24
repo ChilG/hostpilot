@@ -5,6 +5,8 @@ import { applyActiveProfile } from "@/store/helpers/hostWriterHelper";
 import { useTranslation } from "@/i18n/translations";
 import { toast } from "sonner";
 
+import { isHostInProfile } from "@/store/types";
+
 /**
  * Custom hook to run a background scheduler checking dynamic hosts.
  * Resolves dynamic hosts using HTTP/script and automatically updates and re-applies changes.
@@ -24,8 +26,8 @@ export function useDynamicHostScheduler(loading: boolean) {
       const now = Date.now();
 
       for (const host of dynamicHosts) {
+        const intervalMs = (host.syncInterval || 60) * 1000;
         const lastSyncedTime = host.lastSynced ? new Date(host.lastSynced).getTime() : 0;
-        const intervalMs = (host.syncInterval || 300) * 1000;
 
         if (now - lastSyncedTime >= intervalMs) {
           try {
@@ -42,7 +44,7 @@ export function useDynamicHostScheduler(loading: boolean) {
               });
 
               // If this host is in the active profile, automatically re-apply to system hosts file
-              if (activeProfile && activeProfile.entryIds?.includes(host.id)) {
+              if (isHostInProfile(activeProfile, host)) {
                 await applyActiveProfile();
 
                 toast.success(t("domainRotatedToast", { domain: resolvedDomain }));

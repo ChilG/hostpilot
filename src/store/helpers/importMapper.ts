@@ -183,10 +183,28 @@ export function mergeImportedConfig(
       })
       .filter(Boolean) as string[];
 
+    const importedMappedGroupIds = ((p.groupIds || p.group_ids || []) as string[])
+      .map((oldId) => {
+        if (groupOldToNewId[oldId]) {
+          return groupOldToNewId[oldId];
+        }
+        const directMatch = nextGroups.find((eg) => eg.id === oldId);
+        if (directMatch) {
+          return directMatch.id;
+        }
+        const nameMatch = nextGroups.find((eg) => eg.name.toLowerCase() === oldId.toLowerCase());
+        if (nameMatch) {
+          return nameMatch.id;
+        }
+        return null;
+      })
+      .filter(Boolean) as string[];
+
     if (existing) {
       const combinedIds = Array.from(new Set([...existing.entryIds, ...importedMappedIds]));
+      const combinedGroupIds = Array.from(new Set([...(existing.groupIds || []), ...importedMappedGroupIds]));
       nextProfiles = nextProfiles.map((ep) =>
-        ep.id === existing.id ? { ...existing, entryIds: combinedIds, updatedAt: now() } : ep
+        ep.id === existing.id ? { ...existing, entryIds: combinedIds, groupIds: combinedGroupIds, updatedAt: now() } : ep
       );
     } else {
       const newId = uid();
@@ -195,6 +213,7 @@ export function mergeImportedConfig(
         name: p.name,
         description: p.description || null,
         entryIds: importedMappedIds,
+        groupIds: importedMappedGroupIds,
         active: false,
         favorite: p.favorite === true,
         createdAt: p.createdAt || now(),
@@ -209,7 +228,7 @@ export function mergeImportedConfig(
   if (addToActiveProfile && activeProfile && importedIds.length > 0) {
     const combinedIds = Array.from(new Set([...activeProfile.entryIds, ...importedIds]));
     nextProfiles = nextProfiles.map((p) =>
-      p.id === activeProfile.id ? { ...p, entryIds: combinedIds, updatedAt: now() } : p
+      p.id === activeProfile.id ? { ...p, entryIds: combinedIds, groupIds: p.groupIds || [], updatedAt: now() } : p
     );
     profilesImported++;
   }

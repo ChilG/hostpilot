@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "@/store/AppStore";
 import { useTranslation } from "@/i18n/translations";
-import { isTauri } from "@/store/types";
+import { isTauri, getProfileHosts } from "@/store/types";
 
 /**
  * Custom hook that handles applying hosts configuration changes.
@@ -23,9 +23,7 @@ export function useApplyChanges() {
     if (!activeProfile) return;
     try {
       // Filter entries associated with the active profile
-      const profileEntries = hosts.filter((h) =>
-        activeProfile.entryIds?.includes(h.id)
-      );
+      const profileEntries = getProfileHosts(activeProfile, hosts);
 
       // Validate before write if enabled
       if (settings.validateBeforeWrite) {

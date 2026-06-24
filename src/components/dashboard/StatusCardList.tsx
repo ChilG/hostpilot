@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { useAppStore } from "@/store/AppStore";
+import { NULL_PROFILE } from "@/store/types";
 import { useTranslation } from "@/i18n/translations";
 import { BookMarked, Globe, Plug } from "lucide-react";
 
@@ -7,8 +8,7 @@ export function StatusCardList() {
   const { hosts, profiles, ports } = useAppStore();
   const { t } = useTranslation();
 
-  const activeProfile = profiles.find((p) => p.active) ||
-    profiles[0] || { name: "None", id: "", entryIds: [] };
+  const activeProfile = profiles.find((p) => p.active) || profiles[0] || NULL_PROFILE;
   const enabledHosts = hosts.filter((h) => h.enabled);
   const runningPorts = ports.filter((p) => p.status === "running");
 
