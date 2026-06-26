@@ -74,7 +74,10 @@ function AppContent() {
   const PageComponent = pageMap[page];
 
   return (
-    <div className="flex h-screen bg-background text-foreground overflow-hidden">
+    <div 
+      className="flex h-screen bg-background text-foreground overflow-hidden"
+      data-loading={loading}
+    >
       <Sidebar activePage={page} onNavigate={setPage} />
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <PageComponent />

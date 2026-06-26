@@ -328,6 +328,8 @@ export function ImportSection() {
 
             <Button
               size="sm"
+              role="button"
+              aria-label="Parse & Preview"
               className="w-full h-9 text-xs bg-violet-600 hover:bg-violet-700 text-white cursor-pointer"
               onClick={handleParseRawText}
               disabled={!rawText.trim()}

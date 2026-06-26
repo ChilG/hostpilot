@@ -106,6 +106,8 @@ export function ProfileCard({
       <div className="flex items-center gap-2 pt-1">
         <Button
           size="sm"
+          role="button"
+          aria-label="Activate"
           className="flex-1 h-8 text-xs bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5"
           onClick={() => onActivate(profile.id, profile.name)}
         >

@@ -159,7 +159,14 @@ pub fn load_config(app_handle: &tauri::AppHandle) -> Result<AppConfig, String> {
     crate::db::init_db(app_handle)?;
     
     // Load config from database
-    crate::db::load_config_from_db(app_handle)
+    let mut config = crate::db::load_config_from_db(app_handle)?;
+    
+    #[cfg(feature = "e2e-testing")]
+    if std::env::var("HOSTPILOT_TEST_DATA_DIR").is_ok() {
+        config.onboarded = true;
+    }
+    
+    Ok(config)
 }
 
 /// Saves the app configuration to SQLite database.

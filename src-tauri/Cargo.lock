@@ -1869,6 +1869,7 @@ dependencies = [
  "tauri",
  "tauri-build",
  "tauri-plugin-opener",
+ "tauri-plugin-playwright",
  "tauri-plugin-updater",
  "tokio",
 ]
@@ -4694,6 +4695,25 @@ dependencies = [
  "url",
  "windows",
  "zbus 5.16.0",
+]
+
+[[package]]
+name = "tauri-plugin-playwright"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8c7577aaa3dd19b31b2b5b378d6264861672d07c22bd2215069ed4238adac43a"
+dependencies = [
+ "cairo-rs",
+ "gio",
+ "glib",
+ "gtk",
+ "log",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-plugin",
+ "tokio",
+ "webkit2gtk",
 ]
 
 [[package]]

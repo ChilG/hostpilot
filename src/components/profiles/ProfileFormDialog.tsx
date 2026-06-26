@@ -262,9 +262,9 @@ export function ProfileFormDialog({ open, onOpenChange, mode, profile, onSave }:
 
         <div className="space-y-4 py-2">
           <div className="space-y-1.5">
-            <Label htmlFor="prof-name">{t("profileName")} *</Label>
+            <Label htmlFor="profile-name">{t("profileName")} *</Label>
             <Input
-              id="prof-name"
+              id="profile-name"
               placeholder={t("profileNamePlaceholder")}
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -274,9 +274,9 @@ export function ProfileFormDialog({ open, onOpenChange, mode, profile, onSave }:
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="prof-desc">{t("description")}</Label>
+            <Label htmlFor="profile-desc">{t("description")}</Label>
             <Input
-              id="prof-desc"
+              id="profile-desc"
               placeholder={t("descPlaceholder")}
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
@@ -493,6 +493,8 @@ export function ProfileFormDialog({ open, onOpenChange, mode, profile, onSave }:
             {t("cancel")}
           </Button>
           <Button
+            role="button"
+            aria-label={mode === "create" ? "Add" : "Save"}
             className="bg-indigo-600 hover:bg-indigo-700 text-white"
             onClick={handleSave}
           >

@@ -144,6 +144,8 @@ export function GroupFormDialog({ open, onOpenChange, mode, group, onSave }: Pro
             {t("cancel")}
           </Button>
           <Button
+            role="button"
+            aria-label={mode === "create" ? "Add" : "Save"}
             className="bg-indigo-600 hover:bg-indigo-700 text-white"
             onClick={handleSave}
           >

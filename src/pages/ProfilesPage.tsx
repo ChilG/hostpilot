@@ -62,6 +62,8 @@ export function ProfilesPage() {
         actions={
           <Button
             size="sm"
+            role="button"
+            aria-label="Add Profile"
             className="bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5 h-8 text-xs"
             onClick={openCreate}
           >
@@ -117,6 +119,8 @@ export function ProfilesPage() {
           {/* Add new profile */}
           <button
             onClick={openCreate}
+            role="button"
+            aria-label="Add Profile"
             className="rounded-xl border border-dashed border-border bg-transparent p-5 flex flex-col items-center justify-center gap-3 text-muted-foreground hover:text-foreground hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all min-h-[200px] cursor-pointer"
           >
             <div className="w-10 h-10 rounded-full border-2 border-dashed border-current flex items-center justify-center">
@@ -147,7 +151,7 @@ export function ProfilesPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={handleDelete}>
+            <AlertDialogAction variant="destructive" onClick={handleDelete} role="button" aria-label="Delete">
               {t("delete")}
             </AlertDialogAction>
           </AlertDialogFooter>

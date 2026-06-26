@@ -50,6 +50,8 @@ export function GroupCard({ group, hosts, onEdit, onDelete }: GroupCardProps) {
             size="icon"
             className="h-7 w-7 text-muted-foreground hover:text-foreground"
             onClick={() => onEdit(group)}
+            title={t("edit")}
+            aria-label="Edit Group"
           >
             <Pencil className="w-3.5 h-3.5" />
           </Button>
@@ -58,6 +60,8 @@ export function GroupCard({ group, hosts, onEdit, onDelete }: GroupCardProps) {
             size="icon"
             className="h-7 w-7 text-muted-foreground hover:text-destructive"
             onClick={() => onDelete(group)}
+            title={t("delete")}
+            aria-label="Delete Group"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </Button>

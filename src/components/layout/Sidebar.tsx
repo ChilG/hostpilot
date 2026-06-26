@@ -80,6 +80,8 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
             <button
               key={page}
               onClick={() => onNavigate(page)}
+              role="button"
+              aria-label={t(page)}
               className={cn(
                 "w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-all duration-150 group",
                 active

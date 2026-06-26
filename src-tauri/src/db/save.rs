@@ -1,4 +1,4 @@
-use rusqlite::params;
+use rusqlite::{params, Connection};
 use crate::config::*;
 use super::get_connection;
 
@@ -24,8 +24,7 @@ const QUERY_INSERT_BACKUP: &str = include_str!("../../queries/insert_backup.sql"
 const QUERY_INSERT_APP_STATE: &str = include_str!("../../queries/insert_app_state.sql");
 const QUERY_INSERT_PROXY_RULE: &str = include_str!("../../queries/insert_proxy_rule.sql");
 
-pub fn save_config_to_db(app_handle: &tauri::AppHandle, config: &AppConfig) -> Result<(), String> {
-    let mut conn = get_connection(app_handle)?;
+pub fn save_config_to_conn(conn: &mut Connection, config: &AppConfig) -> Result<(), String> {
     let tx = conn.transaction().map_err(|e| format!("Failed to start transaction: {}", e))?;
     
     tx.execute(QUERY_DELETE_ALL_PROFILE_ENTRIES, []).map_err(|e| e.to_string())?;
@@ -177,3 +176,9 @@ pub fn save_config_to_db(app_handle: &tauri::AppHandle, config: &AppConfig) -> R
     tx.commit().map_err(|e| format!("Failed to commit transaction: {}", e))?;
     Ok(())
 }
+
+pub fn save_config_to_db(app_handle: &tauri::AppHandle, config: &AppConfig) -> Result<(), String> {
+    let mut conn = get_connection(app_handle)?;
+    save_config_to_conn(&mut conn, config)
+}
+

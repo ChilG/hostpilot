@@ -271,6 +271,8 @@ export function HostFormDialog({ open, onOpenChange, mode, host, onSave }: Props
             {t("cancel")}
           </Button>
           <Button
+            role="button"
+            aria-label={mode === "create" ? "Add" : "Save"}
             className="bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer"
             onClick={handleSave}
           >

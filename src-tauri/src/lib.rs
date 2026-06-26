@@ -1,6 +1,6 @@
-mod config;
-mod db;
-mod hosts;
+pub mod config;
+pub mod db;
+pub mod hosts;
 mod ports;
 mod proxy;
 mod ssl;
@@ -194,6 +194,10 @@ fn select_backup_directory() -> Result<Option<String>, String> {
 
 #[tauri::command]
 fn get_system_locale() -> String {
+    #[cfg(feature = "e2e-testing")]
+    if std::env::var("HOSTPILOT_TEST_DATA_DIR").is_ok() {
+        return "en".to_string();
+    }
     sys_locale::get_locale().unwrap_or_else(|| "en".to_string())
 }
 
@@ -208,9 +212,17 @@ pub fn run() {
         .install_default()
         .expect("Failed to install rustls crypto provider");
 
-    tauri::Builder::default()
+    #[allow(unused_mut)]
+    let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_updater::Builder::new().build());
+
+    #[cfg(feature = "e2e-testing")]
+    {
+        builder = builder.plugin(tauri_plugin_playwright::init());
+    }
+
+    builder
         .manage(proxy::ProxyState::new())
         .invoke_handler(tauri::generate_handler![
             close_splashscreen,
@@ -239,6 +251,20 @@ pub fn run() {
             install_root_ca,
             resolve_dynamic_host
         ])
+        .setup(|app| {
+            #[cfg(feature = "e2e-testing")]
+            if std::env::var("HOSTPILOT_TEST_DATA_DIR").is_ok() {
+                use tauri::Manager;
+                if let Some(splashscreen) = app.get_webview_window("splashscreen") {
+                    let _ = splashscreen.close();
+                }
+                if let Some(main) = app.get_webview_window("main") {
+                    let _ = main.show();
+                    let _ = main.set_focus();
+                }
+            }
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

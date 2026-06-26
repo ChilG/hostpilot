@@ -1,13 +1,17 @@
 mod load;
 mod save;
 
-pub use load::load_config_from_db;
-pub use save::save_config_to_db;
+pub use load::{load_config_from_db, load_config_from_conn};
+pub use save::{save_config_to_db, save_config_to_conn};
 
 use tauri::Manager;
 use rusqlite::Connection;
 
 pub fn get_db_path(app_handle: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
+    #[cfg(debug_assertions)]
+    if let Ok(test_dir) = std::env::var("HOSTPILOT_TEST_DATA_DIR") {
+        return Ok(std::path::PathBuf::from(test_dir).join("hostpilot.db"));
+    }
     let app_dir = app_handle
         .path()
         .app_data_dir()
@@ -28,9 +32,7 @@ pub fn get_connection(app_handle: &tauri::AppHandle) -> Result<Connection, Strin
     Ok(conn)
 }
 
-pub fn init_db(app_handle: &tauri::AppHandle) -> Result<(), String> {
-    let mut conn = get_connection(app_handle)?;
-    
+pub fn init_db_from_conn(conn: &mut Connection) -> Result<(), String> {
     // Read current database version
     let current_version: i32 = conn.query_row("PRAGMA user_version;", [], |row| row.get(0))
         .map_err(|e| format!("Failed to read database schema version: {}", e))?;
@@ -58,3 +60,9 @@ pub fn init_db(app_handle: &tauri::AppHandle) -> Result<(), String> {
     
     Ok(())
 }
+
+pub fn init_db(app_handle: &tauri::AppHandle) -> Result<(), String> {
+    let mut conn = get_connection(app_handle)?;
+    init_db_from_conn(&mut conn)
+}
+

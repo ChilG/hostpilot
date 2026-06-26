@@ -334,6 +334,8 @@ export function HostsPage() {
             )}
             <Button
               size="sm"
+              role="button"
+              aria-label="Apply Changes"
               className={`gap-1.5 h-8 text-xs relative overflow-hidden transition-all duration-300 cursor-pointer ${
                 hasPendingChanges
                   ? "bg-gradient-to-r from-indigo-500 via-indigo-600 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white shadow-[0_0_15px_rgba(99,102,241,0.5)] animate-pulse-glow ring-1 ring-indigo-400/50"
@@ -359,6 +361,8 @@ export function HostsPage() {
             </Button>
             <Button
               size="sm"
+              role="button"
+              aria-label="Add Host"
               className="bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5 h-8 text-xs cursor-pointer"
               onClick={openCreate}
             >
@@ -497,7 +501,7 @@ export function HostsPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={handleDelete}>
+            <AlertDialogAction variant="destructive" onClick={handleDelete} role="button" aria-label="Delete">
               {t("delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -515,6 +519,8 @@ export function HostsPage() {
             <AlertDialogAction
               variant="destructive"
               onClick={confirmAction}
+              role="button"
+              aria-label="Confirm"
             >
               {t("confirm")}
             </AlertDialogAction>
@@ -539,6 +545,8 @@ export function HostsPage() {
             <AlertDialogAction
               onClick={handleQuickApply}
               className="bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer"
+              role="button"
+              aria-label="Confirm"
             >
               {t("confirm")}
             </AlertDialogAction>

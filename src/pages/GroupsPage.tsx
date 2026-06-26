@@ -120,6 +120,8 @@ export function GroupsPage() {
         actions={
           <Button
             size="sm"
+            role="button"
+            aria-label="Add Group"
             className="bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5 h-8 text-xs"
             onClick={openCreate}
           >
@@ -212,7 +214,7 @@ export function GroupsPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={handleDelete}>
+            <AlertDialogAction variant="destructive" onClick={handleDelete} role="button" aria-label="Delete">
               {t("delete")}
             </AlertDialogAction>
           </AlertDialogFooter>

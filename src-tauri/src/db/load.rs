@@ -1,4 +1,5 @@
 use crate::config::*;
+use rusqlite::Connection;
 use super::get_connection;
 
 // Load queries at compile-time from external SQL files
@@ -14,8 +15,7 @@ const QUERY_SELECT_APP_STATE_SETTINGS: &str = include_str!("../../queries/select
 const QUERY_SELECT_APP_STATE_NOTIFICATIONS: &str = include_str!("../../queries/select_app_state_notifications.sql");
 const QUERY_SELECT_PROXY_RULES: &str = include_str!("../../queries/select_proxy_rules.sql");
 
-pub fn load_config_from_db(app_handle: &tauri::AppHandle) -> Result<AppConfig, String> {
-    let conn = get_connection(app_handle)?;
+pub fn load_config_from_conn(conn: &Connection) -> Result<AppConfig, String> {
     
     // 1. Load groups
     let mut stmt = conn.prepare(QUERY_SELECT_GROUPS)
@@ -205,4 +205,9 @@ pub fn load_config_from_db(app_handle: &tauri::AppHandle) -> Result<AppConfig, S
         notifications,
         proxy_rules,
     })
+}
+
+pub fn load_config_from_db(app_handle: &tauri::AppHandle) -> Result<AppConfig, String> {
+    let conn = get_connection(app_handle)?;
+    load_config_from_conn(&conn)
 }

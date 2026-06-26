@@ -7,14 +7,19 @@ use tauri::Manager;
 use crate::config::{HostEntry, BackupRecord};
 
 /// Returns the system-specific hosts file path
-pub fn get_hosts_path() -> &'static str {
+/// Returns the system-specific hosts file path
+pub fn get_hosts_path() -> std::borrow::Cow<'static, str> {
+    #[cfg(debug_assertions)]
+    if let Ok(test_path) = std::env::var("HOSTPILOT_TEST_HOSTS_PATH") {
+        return std::borrow::Cow::Owned(test_path);
+    }
     #[cfg(target_os = "windows")]
     {
-        "C:\\Windows\\System32\\drivers\\etc\\hosts"
+        std::borrow::Cow::Borrowed("C:\\Windows\\System32\\drivers\\etc\\hosts")
     }
     #[cfg(not(target_os = "windows"))]
     {
-        "/etc/hosts"
+        std::borrow::Cow::Borrowed("/etc/hosts")
     }
 }
 
@@ -22,6 +27,11 @@ pub fn get_hosts_path() -> &'static str {
 pub fn get_backups_dir(app_handle: &tauri::AppHandle) -> Result<PathBuf, String> {
     use tauri::Manager;
     
+    #[cfg(debug_assertions)]
+    if let Ok(test_dir) = std::env::var("HOSTPILOT_TEST_DATA_DIR") {
+        return Ok(PathBuf::from(test_dir).join("backups"));
+    }
+
     // Check if custom backup directory is set in app settings
     if let Ok(config) = crate::config::load_config(app_handle) {
         if let Some(settings) = config.settings {
@@ -42,11 +52,11 @@ pub fn get_backups_dir(app_handle: &tauri::AppHandle) -> Result<PathBuf, String>
 /// Reads the system hosts file content
 pub fn read_hosts_file() -> Result<String, String> {
     let path = get_hosts_path();
-    fs::read_to_string(path).map_err(|e| format!("Failed to read system hosts file ({}): {}", path, e))
+    fs::read_to_string(path.as_ref()).map_err(|e| format!("Failed to read system hosts file ({}): {}", path, e))
 }
 
 /// Helper to generate managed block text for a profile
-fn build_managed_block(block_name: &str, entries: &[HostEntry]) -> String {
+pub fn build_managed_block(block_name: &str, entries: &[HostEntry]) -> String {
     let mut block = String::new();
     if entries.iter().any(|h| h.enabled) {
         block.push_str(&format!("# >>> HostPilot START: {}\n", block_name));
@@ -300,7 +310,8 @@ pub fn write_hosts_block(
     // Normalize line endings: convert \r\n to \n, then remaining \r to \n
     let normalized_content = updated_content.replace("\r\n", "\n").replace('\r', "\n");
     
-    let dest_hosts = Path::new(get_hosts_path());
+    let hosts_path = get_hosts_path();
+    let dest_hosts = Path::new(hosts_path.as_ref());
     
     // Try writing directly first (in case of user-writable hosts file, run as admin/root, etc.)
     let direct_write_res = fs::write(dest_hosts, &normalized_content);
@@ -371,7 +382,8 @@ pub fn restore_backup(
     let normalized_backup = backup_content.replace("\r\n", "\n").replace('\r', "\n");
     
     // Execute administrative copy/write and flush DNS inside the same elevated call on macOS to avoid prompting twice
-    let dest_hosts = Path::new(get_hosts_path());
+    let hosts_path = get_hosts_path();
+    let dest_hosts = Path::new(hosts_path.as_ref());
     copy_file_elevated(&backup_path, dest_hosts, true)
         .map_err(|e| format!("Failed to restore hosts backup: {}", e))?;
         
