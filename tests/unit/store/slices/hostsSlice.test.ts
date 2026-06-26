@@ -131,4 +131,58 @@ describe('hostsSlice', () => {
     useAppStore.getState().disableAllHosts()
     expect(useAppStore.getState().hosts[0].enabled).toBe(false)
   })
+
+  it('addHost — should NOT auto-add to entryIds if host groupId is already in active profile groupIds', () => {
+    useAppStore.setState({
+      profiles: [{
+        id: 'p1',
+        name: 'Profile 1',
+        entryIds: [],
+        groupIds: ['g1'], // g1 already covered
+        active: true,
+        favorite: false,
+        createdAt: '',
+        updatedAt: '',
+      }],
+    })
+
+    useAppStore.getState().addHost({
+      domain: 'covered.local',
+      ip: '10.0.0.1',
+      enabled: true,
+      groupId: 'g1', // same group as active profile
+      source: 'manual',
+    })
+
+    const { profiles } = useAppStore.getState()
+    // entryIds should remain empty — covered by groupIds
+    expect(profiles[0].entryIds).toEqual([])
+    expect(profiles[0].groupIds).toContain('g1')
+  })
+
+  it('addHost — should auto-add to entryIds when no active profile has its group', () => {
+    useAppStore.setState({
+      profiles: [{
+        id: 'p1',
+        name: 'Profile 1',
+        entryIds: [],
+        groupIds: ['g2'], // different group
+        active: true,
+        favorite: false,
+        createdAt: '',
+        updatedAt: '',
+      }],
+    })
+
+    useAppStore.getState().addHost({
+      domain: 'new.local',
+      ip: '10.0.0.2',
+      enabled: true,
+      groupId: 'g1', // not in active profile groupIds
+      source: 'manual',
+    })
+
+    const { profiles, hosts } = useAppStore.getState()
+    expect(profiles[0].entryIds).toContain(hosts[0].id)
+  })
 })

@@ -113,4 +113,24 @@ describe('backupsSlice', () => {
     expect(updated.backups.length).toBe(0)
     expect(apiAdapter.deleteBackupFile).toHaveBeenCalledWith('b_delete')
   })
+
+  it('restoreBackup — should call apiAdapter and add a notification', async () => {
+    useAppStore.setState({
+      backups: [{ id: 'b_restore', createdAt: '', reason: 'Before update', size: '2 KB' }],
+    })
+
+    await useAppStore.getState().restoreBackup('b_restore')
+
+    expect(apiAdapter.restoreBackup).toHaveBeenCalledWith('b_restore')
+    const { notifications } = useAppStore.getState()
+    expect(notifications.length).toBeGreaterThan(0)
+    expect(notifications[0].type).toBe('success')
+  })
+
+  it('addBackup — apiAdapter.backupHostsFile error → throws and does not add to store', async () => {
+    vi.spyOn(apiAdapter, 'backupHostsFile').mockRejectedValueOnce(new Error('Disk full'))
+
+    await expect(useAppStore.getState().addBackup('Failed backup')).rejects.toThrow('Disk full')
+    expect(useAppStore.getState().backups.length).toBe(0)
+  })
 })

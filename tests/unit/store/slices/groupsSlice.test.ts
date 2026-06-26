@@ -117,4 +117,27 @@ describe('groupsSlice', () => {
     expect(updated.profiles[0].groupIds).toEqual([])
     expect(updated.profiles[0].entryIds).toContain('h1') // Entry ID is preserved
   })
+
+  it('setHighlightedGroupId — should set and clear highlightedGroupId', () => {
+    useAppStore.setState({ groups: [{ id: 'g1', name: 'G1', color: '#fff' }] })
+
+    useAppStore.getState().setHighlightedGroupId('g1')
+    expect(useAppStore.getState().highlightedGroupId).toBe('g1')
+
+    useAppStore.getState().setHighlightedGroupId(null)
+    expect(useAppStore.getState().highlightedGroupId).toBeNull()
+  })
+
+  it('updateGroup — should patch group fields', () => {
+    useAppStore.setState({
+      groups: [{ id: 'g1', name: 'Old Name', color: '#fff' }],
+    })
+
+    useAppStore.getState().updateGroup('g1', { name: 'New Name', color: '#000' })
+
+    const updated = useAppStore.getState().groups[0]
+    expect(updated.name).toBe('New Name')
+    expect(updated.color).toBe('#000')
+    expect(updated.id).toBe('g1')
+  })
 })
