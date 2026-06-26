@@ -20,6 +20,7 @@ import {
 } from "./types";
 import { apiAdapter } from "./apiAdapter";
 import { applyThemeClass, applyLanguageClass } from "./helpers/themeHelper";
+import { translations } from "@/i18n/translations";
 
 // Import slice creators
 import { createNotificationsSlice } from "./slices/notificationsSlice";
@@ -138,10 +139,9 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
             }
           }
 
-          const initialTitle = lang === "th" ? "ยินดีต้อนรับสู่ Host Pilot!" : "Welcome to Host Pilot!";
-          const initialDesc = lang === "th" 
-            ? "ติดตั้งโปรแกรมเรียบร้อยแล้ว พร้อมให้คุณจัดการโฮสต์และพอร์ตอย่างง่ายดาย" 
-            : "App successfully installed. Ready to manage hosts and ports.";
+          const dict = translations[lang] || translations.en;
+          const initialTitle = dict["notif.welcomeTitle"] || "Welcome to Host Pilot!";
+          const initialDesc = dict["notif.welcomeDesc"] || "App successfully installed. Ready to manage hosts and ports.";
 
           useAppStore.setState({
             hosts: initialHosts,
